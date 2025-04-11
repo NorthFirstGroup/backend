@@ -1,0 +1,113 @@
+{
+  "compilerOptions": {
+    /* 造訪 https://aka.ms/tsconfig 以了解更多有關此檔案的資訊 */
+
+    /* 專案 */
+    // "incremental": true,                              /* 儲存 .tsbuildinfo 檔案以允許專案的增量編譯。 */
+    // "composite": true,                                /* 啟用約束以允許 TypeScript 專案與專案參考一起使用。 */
+    // "tsBuildInfoFile": "./.tsbuildinfo",              /* 指定 .tsbuildinfo 增量編譯檔案的路徑。 */
+    // "disableSourceOfProjectReferenceRedirect": true,  /* 停用在參考複合專案時偏好來源檔案而非宣告檔案的行為。 */
+    // "disableSolutionSearching": true,                 /* 在編輯時，將專案排除於多專案參考檢查之外。 */
+    // "disableReferencedProjectLoad": true,             /* 減少 TypeScript 自動載入的專案數量。 */
+
+    /* 語言與環境 */
+    "target": "es2016",                                  /* 設定輸出的 JavaScript 語言版本，並包含相容的庫宣告。 */
+    // "lib": [],                                        /* 指定描述目標執行環境的一組內建庫宣告檔案。 */
+    // "jsx": "preserve",                                /* 指定生成的 JSX 程式碼類型。 */
+    // "libReplacement": true,                           /* 啟用庫替換功能。 */
+    "experimentalDecorators": true,                   /* 啟用對舊版實驗性裝飾器的支援。 */
+    "emitDecoratorMetadata": true,                    /* 為來源檔案中的裝飾器宣告生成設計類型的中繼資料。 */
+    // "jsxFactory": "",                                 /* 指定在目標為 React JSX 時使用的 JSX 工廠函數，例如 'React.createElement' 或 'h'。 */
+    // "jsxFragmentFactory": "",                         /* 指定在目標為 React JSX 時用於片段的 JSX 片段參考，例如 'React.Fragment' 或 'Fragment'。 */
+    // "jsxImportSource": "",                            /* 指定在使用 'jsx: react-jsx*' 時用於導入 JSX 工廠函數的模組名稱。 */
+    // "reactNamespace": "",                             /* 指定用於 'createElement' 的物件名稱。僅適用於目標為 'react' 的 JSX。 */
+    // "noLib": true,                                    /* 停用包含任何庫檔案，包括預設的 lib.d.ts。 */
+    // "useDefineForClassFields": true,                  /* 輸出符合 ECMAScript 標準的類別欄位。 */
+    // "moduleDetection": "auto",                        /* 控制檢測模組格式的方式。 */
+
+    /* 模組 */
+    "module": "commonjs",                                /* 指定生成的模組程式碼類型。 */
+    "rootDir": "src",                                  /* 指定來源檔案的根目錄。 */
+    // "moduleResolution": "node10",                     /* 指定 TypeScript 如何從模組名稱中查找檔案。 */
+    // "baseUrl": "./",                                  /* 指定解析非相對模組名稱的基礎目錄。 */
+    // "paths": {},                                      /* 指定一組條目以重新映射導入到其他查找位置。 */
+    // "rootDirs": [],                                   /* 允許將多個資料夾視為一個資料夾來解析模組。 */
+    // "typeRoots": [],                                  /* 指定多個資料夾，這些資料夾類似於 './node_modules/@types'。 */
+    // "types": [],                                      /* 指定不需要在來源檔案中引用即可包含的型別套件名稱。 */
+    // "allowUmdGlobalAccess": true,                     /* 允許從模組中訪問 UMD 全域變數。 */
+    // "moduleSuffixes": [],                             /* 指定解析模組時要搜尋的檔案名稱後綴列表。 */
+    // "allowImportingTsExtensions": true,               /* 允許導入包含 TypeScript 檔案副檔名的檔案。需要設定 '--moduleResolution bundler' 並啟用 '--noEmit' 或 '--emitDeclarationOnly'。 */
+    // "rewriteRelativeImportExtensions": true,          /* 在輸出檔案中將相對導入路徑中的 '.ts'、'.tsx'、'.mts' 和 '.cts' 檔案副檔名重寫為其 JavaScript 等效檔案副檔名。 */
+    // "resolvePackageJsonExports": true,                /* 在解析套件導入時使用 package.json 的 'exports' 欄位。 */
+    // "resolvePackageJsonImports": true,                /* 在解析導入時使用 package.json 的 'imports' 欄位。 */
+    // "customConditions": [],                           /* 在解析導入時，除了解析器特定的預設條件外，還可以設定其他條件。 */
+    // "noUncheckedSideEffectImports": true,             /* 檢查具有副作用的導入。 */
+    "resolveJsonModule": true,                        /* 啟用導入 .json 檔案。 */
+    // "allowArbitraryExtensions": true,                 /* 啟用導入具有任何副檔名的檔案，前提是存在宣告檔案。 */
+    // "noResolve": true,                                /* 禁止 'import'、'require' 或 '<reference>' 擴展 TypeScript 應添加到專案中的檔案數量。 */
+
+    /* JavaScript 支援 */
+    // "allowJs": true,                                  /* 允許 JavaScript 檔案成為專案的一部分。使用 'checkJS' 選項來檢查這些檔案中的錯誤。 */
+    // "checkJs": true,                                  /* 啟用對型別檢查的 JavaScript 檔案的錯誤報告。 */
+    // "maxNodeModuleJsDepth": 1,                        /* 指定從 'node_modules' 中檢查 JavaScript 檔案的最大資料夾深度。僅適用於 'allowJs'。 */
+
+    /* 輸出 */
+    // "declaration": true,                              /* 從專案中的 TypeScript 和 JavaScript 檔案生成 .d.ts 檔案。 */
+    // "declarationMap": true,                           /* 為 .d.ts 檔案生成 sourcemap。 */
+    // "emitDeclarationOnly": true,                      /* 僅輸出 .d.ts 檔案，而不輸出 JavaScript 檔案。 */
+    // "sourceMap": true,                                /* 為輸出的 JavaScript 檔案生成 source map 檔案。 */
+    // "inlineSourceMap": true,                          /* 將 source map 檔案內嵌到輸出的 JavaScript 中。 */
+    // "noEmit": true,                                   /* 停止輸出檔案。 */
+    // "outFile": "./",                                  /* 指定將所有輸出合併到一個 JavaScript 檔案中的檔案。如果 'declaration' 為 true，還會指定將所有 .d.ts 輸出合併到一個檔案中的檔案。 */
+    "outDir": "dist",                                   /* 指定所有輸出檔案的輸出資料夾。 */
+    // "removeComments": true,                           /* 停止輸出註解。 */
+    // "importHelpers": true,                            /* 允許從 tslib 中導入輔助函數一次，而不是每個檔案都包含它們。 */
+    // "downlevelIteration": true,                       /* 為迭代生成更符合標準但更冗長且效能較低的 JavaScript。 */
+    // "sourceRoot": "",                                 /* 指定調試器尋找參考原始碼的根路徑。 */
+    // "mapRoot": "",                                    /* 指定調試器應該定位 map 檔案的位置，而不是生成的位置。 */
+    // "inlineSources": true,                            /* 在輸出的 JavaScript 中的 sourcemap 中內嵌原始碼。 */
+    // "emitBOM": true,                                  /* 在輸出的檔案開頭輸出 UTF-8 位元組順序標記 (BOM)。 */
+    // "newLine": "crlf",                                /* 設定輸出檔案的換行字元。 */
+    // "stripInternal": true,                            /* 停止輸出具有 '@internal' JSDoc 註解的宣告。 */
+    // "noEmitHelpers": true,                            /* 停止生成自訂輔助函數，例如 '__extends'。 */
+    // "noEmitOnError": true,                            /* 如果報告任何型別檢查錯誤，則停止輸出檔案。 */
+    // "preserveConstEnums": true,                       /* 停止在生成的程式碼中刪除 'const enum' 宣告。 */
+    // "declarationDir": "./",                           /* 指定生成的宣告檔案的輸出目錄。 */
+
+    /* 相容性約束 */
+    // "isolatedModules": true,                          /* 確保每個檔案都可以安全地轉譯，而不依賴其他導入。 */
+    // "verbatimModuleSyntax": true,                     /* 不轉換或刪除任何未標記為僅型別的導入或導出，確保它們以基於 'module' 設定的格式寫入輸出檔案。 */
+    // "isolatedDeclarations": true,                     /* 要求對導出的內容進行充分的註解，以便其他工具可以輕鬆生成宣告檔案。 */
+    // "erasableSyntaxOnly": true,                       /* 不允許非 ECMAScript 的運行時結構。 */
+    // "allowSyntheticDefaultImports": true,             /* 當模組沒有預設導出時，允許使用 'import x from y'。 */
+    "esModuleInterop": true,                             /* 輸出額外的 JavaScript 以簡化對 CommonJS 模組的導入支援。這會啟用 'allowSyntheticDefaultImports' 以實現型別相容性。 */
+    // "preserveSymlinks": true,                         /* 停止將符號連結解析為其實際路徑。這與 Node.js 中的相同標誌相關。 */
+    "forceConsistentCasingInFileNames": true,            /* 確保導入中的大小寫正確。 */
+
+    /* 型別檢查 */
+    "strict": true,                                      /* 啟用所有嚴格型別檢查選項。 */
+    // "noImplicitAny": true,                            /* 啟用對具有隱含 'any' 型別的表達式和宣告的錯誤報告。 */
+    // "strictNullChecks": true,                         /* 在型別檢查時，考慮 'null' 和 'undefined'。 */
+    // "strictFunctionTypes": true,                      /* 在分配函數時，檢查參數和返回值是否為子型別相容。 */
+    // "strictBindCallApply": true,                      /* 檢查 'bind'、'call' 和 'apply' 方法的參數是否與原始函數匹配。 */
+    // "strictPropertyInitialization": true,             /* 檢查在建構函數中未設定的類別屬性。 */
+    // "strictBuiltinIteratorReturn": true,              /* 內建迭代器的 'TReturn' 型別為 'undefined' 而不是 'any'。 */
+    // "noImplicitThis": true,                           /* 當 'this' 被賦予 'any' 型別時啟用錯誤報告。 */
+    // "useUnknownInCatchVariables": true,               /* 預設將 catch 子句變數設定為 'unknown' 而不是 'any'。 */
+    // "alwaysStrict": true,                             /* 確保始終輸出 'use strict'。 */
+    // "noUnusedLocals": true,                           /* 當本地變數未被讀取時啟用錯誤報告。 */
+    // "noUnusedParameters": true,                       /* 當函數參數未被讀取時啟用錯誤報告。 */
+    // "exactOptionalPropertyTypes": true,               /* 按照書寫方式解釋可選屬性型別，而不是添加 'undefined'。 */
+    // "noImplicitReturns": true,                        /* 啟用對未明確返回的函數代碼路徑的錯誤報告。 */
+    // "noFallthroughCasesInSwitch": true,               /* 啟用對 switch 語句中未處理的情況的錯誤報告。 */
+    // "noUncheckedIndexedAccess": true,                 /* 在使用索引訪問時，將 'undefined' 添加到型別中。 */
+    // "noImplicitOverride": true,                       /* 確保在派生類別中覆蓋的成員使用 override 修飾符標記。 */
+    // "noPropertyAccessFromIndexSignature": true,       /* 強制對使用索引型別聲明的鍵使用索引訪問器。 */
+    // "allowUnusedLabels": true,                        /* 停止對未使用的標籤的錯誤報告。 */
+    // "allowUnreachableCode": true,                     /* 停止對無法到達的代碼的錯誤報告。 */
+
+    /* 完整性 */
+    // "skipDefaultLibCheck": true,                      /* 跳過對 TypeScript 附帶的 .d.ts 檔案的型別檢查。 */
+    "skipLibCheck": true                                 /* 跳過對所有 .d.ts 檔案的型別檢查。 */
+  }
+}
