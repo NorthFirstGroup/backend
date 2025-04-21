@@ -94,5 +94,5 @@ export function createAuthMiddleware({secret, userRepository, logger = console }
 
 /** 轉換 req.auth 為使用者資料 */
 export function getAuthUser(req: JWTRequest): User {
-    return (req.auth as { user: User }).user
+    return (req.auth as User)
 }
