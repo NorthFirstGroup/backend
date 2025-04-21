@@ -1,0 +1,17 @@
+import { DataSource } from 'typeorm'
+import ConfigManager from '../config'
+import { UserEntity } from '../entities/User'
+
+/** 建立資料庫連線設定 */
+export const dataSource = new DataSource({
+    type: 'postgres',
+    host: ConfigManager.get('db.host'),
+    port: ConfigManager.get('db.port'),
+    username: ConfigManager.get('db.username'),
+    password: ConfigManager.get('db.password'),
+    database: ConfigManager.get('db.database'),
+    synchronize: ConfigManager.get('db.synchronize'),
+    ssl: ConfigManager.get('db.ssl'),
+    poolSize: 10,
+    entities: [UserEntity],
+})
