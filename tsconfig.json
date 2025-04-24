@@ -11,7 +11,7 @@
     // "disableReferencedProjectLoad": true,             /* 減少 TypeScript 自動載入的專案數量。 */
 
     /* 語言與環境 */
-    "target": "es2016",                                  /* 設定輸出的 JavaScript 語言版本，並包含相容的庫宣告。 */
+    "target": "es2020",                                  /* 設定輸出的 JavaScript 語言版本，並包含相容的庫宣告。 */
     // "lib": [],                                        /* 指定描述目標執行環境的一組內建庫宣告檔案。 */
     // "jsx": "preserve",                                /* 指定生成的 JSX 程式碼類型。 */
     // "libReplacement": true,                           /* 啟用庫替換功能。 */
@@ -27,7 +27,7 @@
 
     /* 模組 */
     "module": "commonjs",                                /* 指定生成的模組程式碼類型。 */
-    "rootDir": "src",                                  /* 指定來源檔案的根目錄。 */
+    "rootDir": "src",                                    /* 指定來源檔案的根目錄。 */
     // "moduleResolution": "node10",                     /* 指定 TypeScript 如何從模組名稱中查找檔案。 */
     // "baseUrl": "./",                                  /* 指定解析非相對模組名稱的基礎目錄。 */
     // "paths": {},                                      /* 指定一組條目以重新映射導入到其他查找位置。 */
@@ -59,7 +59,7 @@
     // "inlineSourceMap": true,                          /* 將 source map 檔案內嵌到輸出的 JavaScript 中。 */
     // "noEmit": true,                                   /* 停止輸出檔案。 */
     // "outFile": "./",                                  /* 指定將所有輸出合併到一個 JavaScript 檔案中的檔案。如果 'declaration' 為 true，還會指定將所有 .d.ts 輸出合併到一個檔案中的檔案。 */
-    "outDir": "dist",                                   /* 指定所有輸出檔案的輸出資料夾。 */
+    "outDir": "dist",                                    /* 指定所有輸出檔案的輸出資料夾。 */
     // "removeComments": true,                           /* 停止輸出註解。 */
     // "importHelpers": true,                            /* 允許從 tslib 中導入輔助函數一次，而不是每個檔案都包含它們。 */
     // "downlevelIteration": true,                       /* 為迭代生成更符合標準但更冗長且效能較低的 JavaScript。 */

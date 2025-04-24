@@ -5,14 +5,19 @@
 ```text
 > 主結構
     src/
-    ├── app.ts # Express 應用程式入口
-    ├── server.ts # 啟動伺服器
-    ├── db.ts # TypeORM 初始化
-    ├── redis.ts # Redis 客戶端
-    ├── routes/ # 路由
+    ├── config/ # 系統設定， 從 index.ts ConfigManager 取設定值
     ├── controllers/ # 控制器
+    ├── db/ # 資料庫相關
+        ├── data-source.ts # Postgres 資料庫連線
+        └── redis-source.ts # Redis 資料庫連線
+    ├── entities/ # 資料庫實體
+    ├── middlewares/ # 中介層 (認證)
+    ├── routes/ # 路由
     ├── services/ # 商業邏輯
-    └── entities/ # 資料庫實體
+    ├── utils/ # 通用功能
+    ├── app.ts # Express 應用程式入口，新路由要加到這
+    └── server.ts # 啟動伺服器
+
 ```
 
 ## 開啟專案
@@ -22,9 +27,13 @@
 
 ```shell
 npm install
+npm run build
+```
+3. 啟動前確認.env，要執行 dev 就把 DB_HOST 及 REDIS_HOST 調成 localhost
+```shell
+npm run startdocker
 npm run dev
 ```
-
 ## Commit 規範
 
 Commit 訊息依照 [約定式提交 (Conventional Commits)](https://www.conventionalcommits.org/zh-hant/v1.0.0/)。
