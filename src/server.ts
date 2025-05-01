@@ -4,6 +4,7 @@ import getLogger from './utils/logger'
 import app from './app'
 import { dataSource } from './db/data-source'
 import { redis } from './db/redis-source'
+import { initAreaCache } from './utils/areaCache'
 
 const logger = getLogger('www')
 
@@ -41,6 +42,10 @@ server.listen(port, async () => {
     try {
         await dataSource.initialize()
         logger.info(`資料庫連線成功`)
+
+        // 資料庫沒有資料時建立種子資料
+        await dataSource.runMigrations();
+        logger.info(`資料庫遷移完成`);
     } catch (error: unknown) {
         if (error instanceof Error) {
             logger.error(`資料庫連線失敗: ${error.message}`)
@@ -53,6 +58,7 @@ server.listen(port, async () => {
     try {
         await redis.ping()
         logger.info('Redis 連線成功')
+        initAreaCache(dataSource, redis)
     } catch (error: unknown) {
         if (error instanceof Error) {
             logger.error(`Redis 連線失敗: ${error.message}`)

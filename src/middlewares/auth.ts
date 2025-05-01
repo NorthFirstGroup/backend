@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express'
 import jwt, { JwtPayload, VerifyErrors } from 'jsonwebtoken'
 import { Request as JWTRequest } from 'express-jwt'
 import { Repository } from 'typeorm'
-import { User } from '../entities/User'
+import { UserEntity } from '../entities/User'
 
 const PERMISSION_DENIED_STATUS_CODE = 401
 
@@ -44,7 +44,7 @@ function verifyJWT(token: string, secret: string): Promise<JwtPayload & { id: st
 
 interface AuthMiddlewareOptions {
     secret: string
-    userRepository: Repository<User>
+    userRepository: Repository<UserEntity>
     logger?: Pick<Console, 'error' | 'warn'>
 }
 
@@ -93,6 +93,6 @@ export function createAuthMiddleware({secret, userRepository, logger = console }
 }
 
 /** 轉換 req.auth 為使用者資料 */
-export function getAuthUser(req: JWTRequest): User {
-    return (req.auth as User)
+export function getAuthUser(req: JWTRequest): UserEntity {
+    return (req.auth as UserEntity)
 }

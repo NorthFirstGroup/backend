@@ -6,14 +6,14 @@
 > 主結構
     src/
     ├── config/ # 系統設定， 從 index.ts ConfigManager 取設定值
-    ├── controllers/ # 控制器
+    ├── controllers/ # API 實作區
     ├── db/ # 資料庫相關
-        ├── data-source.ts # Postgres 資料庫連線
-        └── redis-source.ts # Redis 資料庫連線
+    |   ├── data-source.ts # Postgres 資料庫連線
+    |   └── redis-source.ts # Redis 資料庫連線
     ├── entities/ # 資料庫實體
     ├── middlewares/ # 中介層 (認證)
+    ├── migrations/ # 系統種子資料
     ├── routes/ # 路由
-    ├── services/ # 商業邏輯
     ├── utils/ # 通用功能
     ├── app.ts # Express 應用程式入口，新路由要加到這
     └── server.ts # 啟動伺服器

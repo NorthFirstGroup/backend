@@ -9,7 +9,7 @@ import { dbEntityNameUser } from '../entities/User'
 const router = Router()
 
 // 建立 logger
-const logger = getLogger('Users')
+const logger = getLogger('User')
 
 // 設定驗證 middleware
 const auth = createAuthMiddleware({
@@ -20,8 +20,9 @@ const auth = createAuthMiddleware({
 
 // 路由定義
 router.post('/signup', userController.postSignup)
-router.post('/login', userController.postLogin)
+router.post('/signin', userController.postSignin)
 router.get('/profile', auth, userController.getProfile)
 router.put('/profile', auth, userController.putProfile)
+router.put('/password', auth, userController.putPassword)
 
 export default router

@@ -1,4 +1,5 @@
 import { validate } from 'uuid'
+import dayjs from 'dayjs'
 
 /** 檢查值是否為無效的字串。
  * @param value - 要驗證的值
@@ -72,3 +73,37 @@ export const isNotValidPassword = (value: unknown): boolean => {
 export const isNotValidUrl = (value: unknown): boolean => {
     return isNotValidString(value) || !(value as string).startsWith('https')
 }
+
+/** 檢查值是否為無效的手機號碼格式（09XXXXXXXX）。
+ * @param value - 要驗證的值
+ * @returns 若格式不符則回傳 true，否則回傳 false
+ */
+export const isNotValidPhoneNumber = (value: unknown): boolean => {
+    const phonePattern = /^09\d{8}$/;
+    if (!isNotValidString(value)) {
+        return !phonePattern.test(value as string);
+    } else {
+        return false;
+    }
+};
+
+/** 檢查值是否為無效的生日（YYYY-MM-DD）。
+ * @param value - 要驗證的值
+ * @returns 若格式不符則回傳 true，否則回傳 false
+ */
+export const isNotValidBirthday = (value: unknown): boolean => {
+    if (isNotValidString(value))
+        return true;
+
+    // 檢查格式是否為 YYYY-MM-DD
+    const birthdayPattern = /^\d{4}-\d{2}-\d{2}$/;
+    if (!birthdayPattern.test(value as string))
+        return true;
+
+    // 檢查日期是否有效，避免不存在的日子 2/30
+    const date = dayjs(value as string, 'YYYY-MM-DD', true);
+    if (!date.isValid() || date.format('YYYY-MM-DD') !== value)
+        return true;
+
+    return false;
+};
