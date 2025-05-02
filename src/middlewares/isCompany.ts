@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { User, UserRole } from '../entities/User'
+import { UserEntity, UserRole } from '../entities/User'
 
 const FORBIDDEN_MESSAGE = '使用者尚未成為廠商'
 const PERMISSION_DENIED_STATUS_CODE = 401
@@ -14,9 +14,9 @@ function generateError(
     return error
 }
 
-/** Middleware：驗證目前登入的使用者是否為教練 */
-export function requireCompanyRole(req: Request & { user?: User }, res: Response, next: NextFunction) {
-    if (!req.user || req.user.role !== UserRole.COMPANY) {
+/** Middleware：驗證目前登入的使用者是否為廠商 */
+export function requireCompanyRole(req: Request & { user?: UserEntity }, res: Response, next: NextFunction) {
+    if (!req.user || req.user.role !== UserRole.ORGANIZER) {
         next(generateError())
         return
     }

@@ -3,8 +3,10 @@ import cors from 'cors'
 import path from 'path'
 import pinoHttp from 'pino-http'
 import getLogger from './utils/logger'
-import responseSend from './utils/serverResponse'
+import responseSend, { initResponseData } from './utils/serverResponse'
 import userRouter from './routes/user'
+import authRouter from './routes/auth'
+import adminRouter from './routes/admin'
 
 const logger = getLogger('App')
 const app = express()
@@ -36,14 +38,13 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 })
 
 // API 路由
-app.use('/api/user', userRouter)
+app.use('/api/v1/user', userRouter)
+app.use('/api/v1/auth', authRouter)
+app.use('/api/v1/admin', adminRouter)
 
 // 全域錯誤處理中介層
 app.use((err: { status?: number }, req: Request, res: Response) => {
-    if (err.status)
-        responseSend(res, err.status, '伺服器錯誤')
-    else
-        responseSend(res, 500, '伺服器錯誤')
+    responseSend(initResponseData(res, 5555))
 })
 
 export default app

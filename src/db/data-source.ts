@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm'
 import ConfigManager from '../config'
+import { AreaEntity } from '../entities/Area'
 import { UserEntity } from '../entities/User'
+import { join } from 'path'
 
 /** 建立資料庫連線設定 */
 export const dataSource = new DataSource({
@@ -13,5 +15,7 @@ export const dataSource = new DataSource({
     synchronize: ConfigManager.get('db.synchronize'),
     ssl: ConfigManager.get('db.ssl'),
     poolSize: 10,
-    entities: [UserEntity],
+    entities: [UserEntity, AreaEntity],
+    migrations: [join(__dirname,'../migrations/*')], // 指向遷移檔案
+    migrationsTableName: 'migrations', // 確保遷移表名稱
 })

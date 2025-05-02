@@ -5,15 +5,18 @@ import jwt from 'jsonwebtoken'
 import { Request as JWTRequest } from 'express-jwt'
 import { dataSource } from '../db/data-source'
 import getLogger from '../utils/logger'
-import responseSend from '../utils/serverResponse'
-import { isNotValidString, isNotValidPassword, isNotValidUserName, isNotValidEmail } from '../utils/validation'
+import responseSend, { initResponseData } from '../utils/serverResponse'
+import { isNotValidString, isNotValidPassword, isNotValidUserName, isNotValidEmail, isNotValidPhoneNumber, isNotValidBirthday, isNotValidUrl } from '../utils/validation'
 import generateJWT from '../utils/generateJWT'
 import { getAuthUser } from '../middlewares/auth'
-import { dbEntityNameUser } from '../entities/User'
+import { dbEntityNameUser, UserRole } from '../entities/User'
+import { dbEntityNameArea } from '../entities/Area'
+import { In } from 'typeorm'
 
 const saltRounds = 10
-const logger = getLogger('Users')
+const logger = getLogger('User')
 
+/** 註冊 */
 export async function postSignup(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { name, email, password } = req.body as {
@@ -23,22 +26,22 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
         }
 
         if (isNotValidString(name) || isNotValidString(password) || isNotValidString(email)) {
-            responseSend(res, 400, '欄位未填寫正確', logger)
+            responseSend(initResponseData(res, 1000), logger)
             return
         }
 
         if (isNotValidPassword(password)) {
-            responseSend(res, 400, '密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字', logger)
+            responseSend(initResponseData(res, 1003), logger)
             return
         }
 
         if (isNotValidUserName(name)) {
-            responseSend(res, 400, '使用者名稱不符合規則，最少2個字，最多10個字，不可包含任何特殊符號與空白', logger)
+            responseSend(initResponseData(res, 1006), logger)
             return
         }
 
         if (isNotValidEmail(email)) {
-            responseSend(res, 400, '不符合Email的格式字串', logger)
+            responseSend(initResponseData(res, 1007), logger)
             return
         }
 
@@ -46,34 +49,36 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
         const existingUser = await userRepository.findOne({ where: { email } })
 
         if (existingUser) {
-            responseSend(res, 409, 'Email 已被使用', logger)
+            responseSend(initResponseData(res, 1004), logger)
             return
         }
 
-        const hashPassword = await bcrypt.hash(password, saltRounds)
+        const password_hash = await bcrypt.hash(password, saltRounds)
         const newUser = userRepository.create({
-            name,
+            nick_name: name,
             email,
-            role: 'USER',
-            password: hashPassword,
+            role: UserRole.USER,
+            password_hash,
+            status: 1,
         })
 
         const savedUser = await userRepository.save(newUser)
         logger.info('新建立的使用者ID:', savedUser.id)
 
-        responseSend(res, 201, {
+        responseSend(initResponseData(res, 2000, {
             user: {
                 id: savedUser.id,
-                name: savedUser.name,
+                name: savedUser.nick_name,
             },
-        })
+        }))
     } catch (error) {
         logger.error('建立使用者錯誤:', error)
         next(error)
     }
 }
 
-export async function postLogin(req: JWTRequest, res: Response, next: NextFunction) {
+/** 登入 */
+export async function postSignin(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { email, password } = req.body as {
             email: string
@@ -81,29 +86,29 @@ export async function postLogin(req: JWTRequest, res: Response, next: NextFuncti
         }
 
         if (isNotValidEmail(email)) {
-            responseSend(res, 400, '不符合Email的格式字串', logger)
+            responseSend(initResponseData(res, 1007), logger)
             return
         }
 
         if (isNotValidPassword(password)) {
-            responseSend(res, 400, '密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字', logger)
+            responseSend(initResponseData(res, 1003), logger)
             return
         }
 
         const userRepository = dataSource.getRepository(dbEntityNameUser)
         const existingUser = await userRepository.findOne({
-            select: ['id', 'name', 'password'],
+            select: ['id', 'nick_name', 'password_hash'],
             where: { email },
         })
 
         if (!existingUser) {
-            responseSend(res, 400, '使用者不存在或密碼輸入錯誤')
+            responseSend(initResponseData(res, 1005))
             return
         }
 
-        const isMatch = await bcrypt.compare(password, existingUser.password)
+        const isMatch = await bcrypt.compare(password, existingUser.password_hash)
         if (!isMatch) {
-            responseSend(res, 400, '使用者不存在或密碼輸入錯誤')
+            responseSend(initResponseData(res, 1005))
             return
         }
 
@@ -113,69 +118,158 @@ export async function postLogin(req: JWTRequest, res: Response, next: NextFuncti
             { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
         )
 
-        responseSend(res, 201, {
+        responseSend(initResponseData(res, 2000, {
             token,
             user: {
-                name: existingUser.name,
+                name: existingUser.nick_name,
             },
-        })
+        }))
     } catch (error) {
         logger.error('登入錯誤:', error)
         next(error)
     }
 }
 
+/** 取得使用者資料 */
 export async function getProfile(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id } = getAuthUser(req)
 
         const userRepository = dataSource.getRepository(dbEntityNameUser)
         const user = await userRepository.findOne({
-            select: ['name', 'email'],
+            select: ['nick_name', 'phone', 'birth_date', 'profile_url'],
             where: { id },
+            loadRelationIds: { relations: ['location_ids'] }, // 僅載入 location_ids 的 ID
         })
 
-        responseSend(res, 200, { user })
+        if (!user) {
+            responseSend(initResponseData(res, 1008))
+            return
+        }
+
+        responseSend(initResponseData(res, 2000, {
+            name: user.nick_name,
+            phone_num: user.phone || '',
+            birth_date: user.birth_date || '',
+            location_ids: user.location_ids || [],
+            profile_url: user.profile_url || '',
+        }))
     } catch (error) {
         logger.error('取得使用者資料錯誤:', error)
         next(error)
     }
 }
 
+/** 修改使用者資料 */
 export async function putProfile(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id } = getAuthUser(req)
-        const { name } = req.body as { name: string }
+        const { name, phone_num, birth_date, location_ids, profile_url } = req.body as { name: string, phone_num: string, birth_date: string, location_ids: number[], profile_url: string }
 
-        if (isNotValidUserName(name)) {
-            responseSend(res, 400, '使用者名稱不符合規則，最少2個字，最多10個字，不可包含任何特殊符號與空白', logger)
+        if (name !== '' && isNotValidUserName(name)) {
+            responseSend(initResponseData(res, 1006), logger)
+            return
+        }
+
+        if (phone_num !== '' && isNotValidPhoneNumber(phone_num)) {
+            responseSend(initResponseData(res, 1009), logger)
+            return
+        }
+
+        if (birth_date !== '' && isNotValidBirthday(birth_date)) {
+            responseSend(initResponseData(res, 1010), logger)
+            return
+        }
+
+        if (profile_url !== '' && isNotValidUrl(profile_url)) {
+            responseSend(initResponseData(res, 1011), logger)
+            return
+        }
+
+        const userRepository = dataSource.getRepository(dbEntityNameUser)
+        const areaRepository = dataSource.getRepository(dbEntityNameArea)
+
+        // 查詢要更新的用戶
+        const user = await userRepository.findOne({
+            where: { id },
+            relations: ['location_ids'], // 載入當前的 location_ids 關聯
+        })
+
+        if (!user) {
+            responseSend(initResponseData(res, 1008), logger)
+            return
+        }
+
+        // 查找 Area 實體
+        const areas = (location_ids.length > 0) ? await areaRepository.findBy({ id: In(location_ids) }) : [];
+
+        if (name !== '')
+            user.nick_name = name
+        if (phone_num !== '')
+            user.phone = phone_num
+        if (birth_date !== '')
+            user.birth_date = new Date(birth_date)
+        if (profile_url !== '')
+            user.profile_url = profile_url
+
+        user.location_ids = areas
+    
+        await userRepository.save(user)
+
+        responseSend(initResponseData(res, 2000))
+    } catch (error) {
+        logger.error('更新使用者資料錯誤:', error)
+        next(error)
+    }
+}
+
+/** 修改使用者密碼 */
+export async function putPassword(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id } = getAuthUser(req)
+        const { password, new_password } = req.body as { password: string, new_password: string }
+
+        if (isNotValidPassword(password) || isNotValidPassword(new_password)) {
+            responseSend(initResponseData(res, 1003), logger)
+            return
+        }
+
+        if (password === new_password) {
+            responseSend(initResponseData(res, 1012), logger)
             return
         }
 
         const userRepository = dataSource.getRepository(dbEntityNameUser)
         const user = await userRepository.findOne({
-            select: ['name'],
+            select: ['password_hash'],
             where: { id },
         })
 
-        if (!user || user.name === name) {
-            responseSend(res, 400, '使用者名稱未變更')
+        if (!user) {
+            responseSend(initResponseData(res, 1008), logger)
             return
         }
 
+        const isMatch = await bcrypt.compare(password, user.password_hash)
+        if (!isMatch) {
+            responseSend(initResponseData(res, 1001), logger)
+            return
+        }
+
+        const password_hash = await bcrypt.hash(new_password, saltRounds)
         const updatedResult = await userRepository.update(
-            { id, name: user.name },
-            { name }
+            { id },
+            { password_hash: password_hash },
         )
 
         if (updatedResult.affected === 0) {
-            responseSend(res, 400, '更新使用者失敗')
+            responseSend(initResponseData(res, 1002), logger)
             return
         }
 
-        responseSend(res, 200, {})
+        responseSend(initResponseData(res, 2000))
     } catch (error) {
-        logger.error('更新使用者資料錯誤:', error)
+        logger.error('更新使用者密碼錯誤:', error)
         next(error)
     }
 }
