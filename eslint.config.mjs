@@ -7,6 +7,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
+    { ignores: ['dist'] },
     // 通用 JS / TS 設定
     {
         files: ["**/*.{js,mjs,cjs,ts}"],
