@@ -4,9 +4,10 @@ import path from 'path'
 import pinoHttp from 'pino-http'
 import getLogger from './utils/logger'
 import responseSend, { initResponseData } from './utils/serverResponse'
-import userRouter from './routes/user'
-import authRouter from './routes/auth'
-import adminRouter from './routes/admin'
+import userRouter1 from './routes/v1/user'
+import userRouter2 from './routes/v2/user'
+import authRouter1 from './routes/v1/auth'
+import adminRouter1 from './routes/v1/admin'
 
 const logger = getLogger('App')
 const app = express()
@@ -38,9 +39,10 @@ app.get('/healthcheck', (req: Request, res: Response) => {
 })
 
 // API 路由
-app.use('/api/v1/user', userRouter)
-app.use('/api/v1/auth', authRouter)
-app.use('/api/v1/admin', adminRouter)
+app.use('/api/v1/user', userRouter1)
+app.use('/api/v2/user', userRouter2)
+app.use('/api/v1/auth', authRouter1)
+app.use('/api/v1/admin', adminRouter1)
 
 // 全域錯誤處理中介層
 app.use((err: { status?: number }, req: Request, res: Response) => {

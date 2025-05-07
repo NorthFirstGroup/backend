@@ -1,10 +1,10 @@
 import { Router } from 'express'
-import config from '../config'
-import { dataSource } from '../db/data-source'
-import getLogger from '../utils/logger'
-import * as userController from '../controllers/user'
-import { createAuthMiddleware } from '../middlewares/auth'
-import { dbEntityNameUser } from '../entities/User'
+import config from '../../config'
+import { dataSource } from '../../db/data-source'
+import getLogger from '../../utils/logger'
+import * as userController from '../../controllers/user'
+import { createAuthMiddleware } from '../../middlewares/auth'
+import { dbEntityNameUser } from '../../entities/User'
 
 const router = Router()
 
@@ -19,7 +19,7 @@ const auth = createAuthMiddleware({
 })
 
 // 路由定義
-router.post('/signup', userController.postSignup)
+router.post('/signup', (req, res, next) => userController.postSignup(req, res, next, 'v1'))
 router.post('/signin', userController.postSignin)
 router.get('/profile', auth, userController.getProfile)
 router.put('/profile', auth, userController.putProfile)
