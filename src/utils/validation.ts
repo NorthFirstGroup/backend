@@ -85,7 +85,7 @@ export const isNotValidPhoneNumber = (value: unknown): boolean => {
     } else {
         return false;
     }
-};
+}
 
 /** 檢查值是否為無效的生日（YYYY-MM-DD）。
  * @param value - 要驗證的值
@@ -106,4 +106,4 @@ export const isNotValidBirthday = (value: unknown): boolean => {
         return true;
 
     return false;
-};
+}

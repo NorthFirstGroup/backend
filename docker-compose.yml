@@ -41,6 +41,7 @@ services:
   bootcamp-fitness:
     build:
       dockerfile: Dockerfile
+    # image: northfirstgroup/goticket-api:latest
     env_file:
       - .env
     ports:

@@ -17,7 +17,7 @@ const saltRounds = 10
 const logger = getLogger('User')
 
 /** 註冊 */
-export async function postSignup(req: JWTRequest, res: Response, next: NextFunction) {
+export async function postSignup(req: JWTRequest, res: Response, next: NextFunction, version = 'v1') {
     try {
         const { name, email, password } = req.body as {
             name: string
@@ -64,6 +64,22 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
 
         const savedUser = await userRepository.save(newUser)
         logger.info('新建立的使用者ID:', savedUser.id)
+
+        if (version === 'v2') {
+            const token = await generateJWT(
+                { id: savedUser.id },
+                config.get('secret.jwtSecret'),
+                { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
+            )
+
+            responseSend(initResponseData(res, 2000, {
+                token,
+                user: {
+                    name: savedUser.nick_name,
+                },
+            }))
+            return
+        }
 
         responseSend(initResponseData(res, 2000, {
             user: {
@@ -166,7 +182,7 @@ export async function putProfile(req: JWTRequest, res: Response, next: NextFunct
         const { id } = getAuthUser(req)
         const { name, phone_num, birth_date, location_ids, profile_url } = req.body as { name: string, phone_num: string, birth_date: string, location_ids: number[], profile_url: string }
 
-        if (name !== '' && isNotValidUserName(name)) {
+        if (isNotValidUserName(name)) {
             responseSend(initResponseData(res, 1006), logger)
             return
         }
@@ -203,8 +219,8 @@ export async function putProfile(req: JWTRequest, res: Response, next: NextFunct
         // 查找 Area 實體
         const areas = (location_ids.length > 0) ? await areaRepository.findBy({ id: In(location_ids) }) : [];
 
-        if (name !== '')
-            user.nick_name = name
+        user.nick_name = name
+
         if (phone_num !== '')
             user.phone = phone_num
         if (birth_date !== '')

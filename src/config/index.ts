@@ -3,6 +3,7 @@ import db, { DbConfig } from './db'
 import redis, { RedisConfig } from './redis'
 import web, { WebConfig } from './web'
 import secret, { SecretConfig } from './secret'
+import mail, { MailConfig } from './mail'
 
 dotenv.config()
 
@@ -12,6 +13,7 @@ const config: Config = {
     redis,
     web,
     secret,
+    mail,
 }
 
 type Config = {
@@ -19,6 +21,7 @@ type Config = {
     redis: RedisConfig,
     web: WebConfig,
     secret: SecretConfig,
+    mail: MailConfig,
 }
 
 type DeepValue<T, Path extends string > = Path extends `${infer Key}.${infer Rest}`
