@@ -38,6 +38,7 @@ class AreaCache {
                 return [];
             }
 
+            // 批次存入 Redis
             const multi = this.redis.multi();
             const areaCache: AreaCacheData[] = areas.map(area => {
                 multi.hset(this.REDIS_KEY, area.id, area.name)
@@ -59,14 +60,13 @@ class AreaCache {
             // 嘗試從 Redis 獲取資料
             const areasRedis = await this.redis.hgetall(this.REDIS_KEY);
             let areas: AreaCacheData[] = [];
-            if (!areasRedis)
-                areas = await this.initAreasToRedis();
-            else {
+            if (areasRedis) {
                 areas = Object.entries(areasRedis).map(([id, name])=> ({
                     id: Number(id), // 將字串 ID 轉為數字
                     name,
                 }));
-            }
+            } else
+                areas = await this.initAreasToRedis();
 
             return areas;
         } catch (error) {
