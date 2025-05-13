@@ -1,0 +1,94 @@
+# Workflow 名稱，會顯示在 GitHub Actions UI 上
+name: Deploy Backend via Docker Compose
+
+# 設定觸發條件：只要 push 到 main 或 kylo/dev 分支就啟動這個流程
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest                           # 使用 GitHub 提供的 Ubuntu runner 執行流程
+
+    steps:
+      - name: Checkout code                          # 第一步：拉取 GitHub Repo 原始碼到 runner
+        uses: actions/checkout@v3
+
+      - name: Upload all files to EC2                # 上傳整個專案到 EC2 的指定資料夾
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}              # EC2 公網 IP（從 Secrets 抓）
+          username: ${{ secrets.EC2_USER }}          # 通常是 ubuntu 使用者
+          key: ${{ secrets.EC2_KEY }}                # EC2 私鑰（不要 commit！）
+          source: "."                                # 上傳整個 repo（含 Dockerfile 等）
+          target: "~/project/goticket/CICD/backend"  # 上傳到 EC2 的資料夾位置
+
+      - name: Create .env file on EC2                # 遠端建立後端用的 .env 環境變數檔案
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cat <<EOF > ~/project/goticket/CICD/backend/.env
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            DB_HOST=postgres
+            DB_PORT=5432
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_DATABASE=${{ secrets.DB_DATABASE }}
+            DB_SYNCHRONIZE=true
+            DB_ENABLE_SSL=false
+
+            REDIS_HOST=redis
+            REDIS_PORT=6379
+
+            PORT=8080
+            LOG_LEVEL=debug
+
+            JWT_EXPIRES_DAY=30d
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+            MAIL_USER=${{ secrets.MAIL_USER }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            MAIL_JWT_EXPIRES_MINUTE=5m
+            EOF
+
+      - name: SSH into EC2 and build + restart Docker  # 執行 npm build 和重啟 Docker 容器
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/project/goticket/CICD/backend            # 切換到上傳的資料夾
+            npm install                                   # 安裝後端依賴
+            npm run build                                 # 編譯 TypeScript 程式碼
+            docker compose --env-file .env down           # 停止現有容器
+            docker compose --env-file .env up -d --build  # 重新建置並啟動容器
+
+      - name: Get latest commit message  # 取得最新一次 commit 訊息（用於通知）
+        id: commit
+        run: echo "message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord  # 不論成功或失敗都通知 Discord 頻道
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"  # 取得執行狀態 success / failure
+          COLOR="✅"
+          TITLE="後端部署成功 🚀"
+
+          if [ "$STATUS" != "success" ]; then
+            COLOR="❌"
+            TITLE="後端部署失敗 ❗️請盡速處理"
+          fi
+
+          # 傳送 Webhook 給 Discord
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"content\": \"$COLOR $TITLE\n📦 專案：${{ github.repository }}\n👤 推送者：${{ github.event.pusher.name }}\n🔀 Commit：${{ steps.commit.outputs.message }}\n🌿 分支：${{ github.ref_name }}\n🕐 時間：$(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M')\"
+            }"
