@@ -24,5 +24,6 @@ router.post('/signin', userController.postSignin)
 router.get('/profile', auth, userController.getProfile)
 router.put('/profile', auth, userController.putProfile)
 router.put('/password', auth, userController.putPassword)
+router.post('/upload', auth, userController.postUpload)
 
 export default router
