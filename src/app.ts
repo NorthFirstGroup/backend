@@ -8,6 +8,9 @@ import userRouter1 from './routes/v1/user'
 import userRouter2 from './routes/v2/user'
 import authRouter1 from './routes/v1/auth'
 import adminRouter1 from './routes/v1/admin'
+import frontpageRouter1 from './routes/v1/frontpage'
+import activityRouter1 from './routes/v1/activity'
+import organizerRouter1 from './routes/v1/organizer'
 
 const logger = getLogger('App')
 const app = express()
@@ -43,6 +46,9 @@ app.use('/api/v1/user', userRouter1)
 app.use('/api/v2/user', userRouter2)
 app.use('/api/v1/auth', authRouter1)
 app.use('/api/v1/admin', adminRouter1)
+app.use('/api/v1/frontpage', frontpageRouter1)
+app.use('/api/v1/activity', activityRouter1)
+app.use('/api/v1/organizer', organizerRouter1)
 
 // 全域錯誤處理中介層
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
