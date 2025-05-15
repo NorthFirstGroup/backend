@@ -1,11 +1,11 @@
 # Workflow 名稱，會顯示在 GitHub Actions UI 上
 name: Deploy Backend via Docker Compose
 
-# 設定觸發條件：只要 push 到 main 或 kylo/dev 分支就啟動這個流程
+# 這個 GitHub Action 用來自動化部署 Vue.js 前端專案到 EC2 上
 on:
-  push:
-    branches:
-      - master
+    push:
+        tags:
+            - 'v*.*.*'
 
 jobs:
   deploy:
