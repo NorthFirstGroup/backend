@@ -78,7 +78,7 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
 
         if (version === 'v2') {
             const token = await generateJWT(
-                { id: savedUser.id },
+                { id: savedUser.id, role: savedUser.role },
                 config.get('secret.jwtSecret'),
                 { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
             )
@@ -141,7 +141,7 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
         }
 
         const token = await generateJWT(
-            { id: existingUser.id },
+            { id: existingUser.id, role: existingUser.role },
             config.get('secret.jwtSecret'),
             { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
         )

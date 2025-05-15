@@ -45,6 +45,7 @@ app.use('/api/v1/auth', authRouter1)
 app.use('/api/v1/admin', adminRouter1)
 
 // 全域錯誤處理中介層
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: { code?: number }, req: Request, res: Response, next: NextFunction) => {
     req.log.error(err)
 
