@@ -1,6 +1,6 @@
 {
   "name": "go-ticket-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,7 +12,9 @@
     "stop": "docker compose --env-file .env stop",
     "clean": "docker compose --env-file .env down -v",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint:fix": "eslint . --ext .ts --fix",
+    "version:major": "export ENV_ASSIGN='major' && chmod +x ./version-up.sh && ./version-up.sh",
+    "version:patch": "export ENV_ASSIGN='patch' && chmod +x ./version-up.sh && ./version-up.sh"
   },
   "keywords": [],
   "author": "",
