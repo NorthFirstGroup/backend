@@ -87,6 +87,7 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
                 token,
                 user: {
                     name: savedUser.nick_name,
+                    role: savedUser.role,
                 },
             }))
             return
@@ -124,7 +125,7 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
 
         const userRepository = dataSource.getRepository(dbEntityNameUser)
         const existingUser = await userRepository.findOne({
-            select: ['id', 'nick_name', 'password_hash'],
+            select: ['id', 'nick_name', 'password_hash', 'role'],
             where: { email },
         })
 
@@ -149,6 +150,7 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
             token,
             user: {
                 name: existingUser.nick_name,
+                role: existingUser.role,
             },
         }))
     } catch (error) {

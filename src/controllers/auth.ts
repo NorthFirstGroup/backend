@@ -10,11 +10,12 @@ import { isNotValidPassword, isNotValidEmail } from '../utils/validation'
 import generateJWT from '../utils/generateJWT'
 import { dbEntityNameUser } from '../entities/User'
 import sendEmail from '../utils/sendEmail'
+import { getAuthUser } from '../middlewares/auth'
 
 const saltRounds = 10
 const logger = getLogger('Auth')
 
-/** 忘記密碼（未完成） */
+/** 忘記密碼 */
 export async function postForgetPassword(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { email } = req.body as { email: string }
@@ -25,36 +26,32 @@ export async function postForgetPassword(req: JWTRequest, res: Response, next: N
         }
 
         const token = await generateJWT(
-            { id: email },
+            { email: email },
             config.get('secret.jwtSecret'),
             { expiresIn: config.get('mail.jwtExpiresMinute') as jwt.SignOptions['expiresIn'] }
         )
 
-        sendEmail({
-            to: email,
-            subject: 'GoTicket 密碼重新設定通知',
-            text: '',
-        })
+        // sendEmail({
+        //     to: email,
+        //     subject: 'GoTicket 密碼重新設定通知',
+        //     text: `請點選連結重新設定密碼: https://goticket.ddns.net/reset-password?token=${token}`,
+        // })
 
-        responseSend(initResponseData(res, 2000))
+        responseSend(initResponseData(res, 2000, { token }))
     } catch (error) {
         logger.error('postForgetPassword 錯誤:', error)
         next(error)
     }
 }
 
-/** 未登入狀態重設密碼（未完成） */
+/** 未登入狀態重設密碼 */
 export async function postResetPassword(req: JWTRequest, res: Response, next: NextFunction) {
     try {
-        const { email, password } = req.body as { email: string, password: string }
+        const { email } = getAuthUser(req)
+        const { password } = req.body as { password: string }
 
         if (isNotValidPassword(password)) {
-            responseSend(initResponseData(res, 4001), logger)
-            return
-        }
-
-        if (isNotValidEmail(email)) {
-            responseSend(initResponseData(res, 1007), logger)
+            responseSend(initResponseData(res, 1003), logger)
             return
         }
 

@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import cors from 'cors'
 import path from 'path'
 import pinoHttp from 'pino-http'
@@ -45,8 +45,13 @@ app.use('/api/v1/auth', authRouter1)
 app.use('/api/v1/admin', adminRouter1)
 
 // 全域錯誤處理中介層
-app.use((err: { status?: number }, req: Request, res: Response) => {
-    responseSend(initResponseData(res, 5555))
+app.use((err: { code?: number }, req: Request, res: Response, next: NextFunction) => {
+    req.log.error(err)
+
+    if (err.code) {
+        responseSend(initResponseData(res, err.code))
+    } else
+        responseSend(initResponseData(res, 5555))
 })
 
 export default app
