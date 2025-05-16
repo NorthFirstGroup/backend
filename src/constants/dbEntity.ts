@@ -5,6 +5,12 @@ export const DbEntity = {
   Organizer: 'Organizer',
   ActivityType: 'ActivityType',
   Activity: 'Activity',
+  ActivitySite: 'ActivitySite',
+  Showtimes: 'Showtimes', 
+  ShowtimeSsections: 'ShowtimeSsections',
+  Order: 'Order',
+  OrderTickets: 'OrderTickets',
+  Tickets: 'Tickets',
   
   
   // other tables...
