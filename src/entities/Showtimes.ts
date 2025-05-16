@@ -18,7 +18,7 @@ import { ShowtimeSectionsEntity } from './ShowtimeSections';
 import { DbEntity } from '../constants/dbEntity';
 
 
-@Entity(DbEntity.ActivitySite)
+@Entity(DbEntity.Showtimes)
 export class ShowtimesEntity {
     // 場次 id（主鍵）
     @PrimaryGeneratedColumn('uuid')

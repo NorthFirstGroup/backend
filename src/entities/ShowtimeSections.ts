@@ -19,7 +19,6 @@ import { DbEntity } from '../constants/dbEntity';
 
 /** 活動場次明細表，各分區票價資料包含座位數與剩餘數量 */
 @Entity(DbEntity.ShowtimeSsections)
-@Index('created_at') // 設定 created_at 欄位索引
 export class ShowtimeSectionsEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string; // 場次票價分區id
@@ -46,6 +45,7 @@ export class ShowtimeSectionsEntity {
     vacancy!: number | null; // 座位剩餘數量
 
     @CreateDateColumn({ type: 'timestamp', nullable: false })
+    @Index()
     created_at!: Date; // 資料創建時間，預設為當前時間
 
     @UpdateDateColumn({ type: 'timestamp', nullable: false })
