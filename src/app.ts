@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import cors from 'cors'
 import path from 'path'
 import pinoHttp from 'pino-http'
@@ -8,6 +8,9 @@ import userRouter1 from './routes/v1/user'
 import userRouter2 from './routes/v2/user'
 import authRouter1 from './routes/v1/auth'
 import adminRouter1 from './routes/v1/admin'
+import frontpageRouter1 from './routes/v1/frontpage'
+import activityRouter1 from './routes/v1/activity'
+import organizerRouter1 from './routes/v1/organizer'
 
 const logger = getLogger('App')
 const app = express()
@@ -43,10 +46,19 @@ app.use('/api/v1/user', userRouter1)
 app.use('/api/v2/user', userRouter2)
 app.use('/api/v1/auth', authRouter1)
 app.use('/api/v1/admin', adminRouter1)
+app.use('/api/v1/frontpage', frontpageRouter1)
+app.use('/api/v1/activity', activityRouter1)
+app.use('/api/v1/organizer', organizerRouter1)
 
 // 全域錯誤處理中介層
-app.use((err: { status?: number }, req: Request, res: Response) => {
-    responseSend(initResponseData(res, 5555))
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: { code?: number }, req: Request, res: Response, next: NextFunction) => {
+    req.log.error(err)
+
+    if (err.code) {
+        responseSend(initResponseData(res, err.code))
+    } else
+        responseSend(initResponseData(res, 5555))
 })
 
 export default app

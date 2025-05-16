@@ -4,28 +4,20 @@ import { Request as JWTRequest } from 'express-jwt'
 import { Repository } from 'typeorm'
 import { UserEntity } from '../entities/User'
 
-const PERMISSION_DENIED_STATUS_CODE = 401
-
-const FailedMessageMap = {
-    expired: 'Token 已過期',
-    invalid: '無效的 token',
-    missing: '請先登入',
-}
-
 /** 自定義錯誤 */
-function generateError(status: number, message: string): Error & { status: number } {
-    const error = new Error(message) as Error & { status: number }
-    error.status = status
+function generateError(errorCode: number): Error & { code: number } {
+    const error = new Error() as Error & { code: number }
+    error.code = errorCode
     return error
 }
 
 /** 將 JWT 驗證錯誤格式化為自訂錯誤 */
-function formatVerifyError(jwtError: VerifyErrors): Error & { status: number } {
+function formatVerifyError(jwtError: VerifyErrors): Error & { code: number } {
     switch (jwtError.name) {
         case 'TokenExpiredError':
-            return generateError(PERMISSION_DENIED_STATUS_CODE, FailedMessageMap.expired)
+            return generateError(1017)
         default:
-            return generateError(PERMISSION_DENIED_STATUS_CODE, FailedMessageMap.invalid)
+            return generateError(1014)
     }
 }
 
@@ -43,13 +35,18 @@ function verifyJWT(token: string, secret: string): Promise<JwtPayload & { id: st
 }
 
 interface AuthMiddlewareOptions {
+    /** 密鑰 */
     secret: string
+    /** 使用者資料庫 */
     userRepository: Repository<UserEntity>
+    /** logger */
     logger?: Pick<Console, 'error' | 'warn'>
+    /** 是否改查找 email */
+    isFindEmail?: boolean
 }
 
 /** 回傳一個 Express middleware，驗證 JWT 並查找使用者資料 */
-export function createAuthMiddleware({secret, userRepository, logger = console }: AuthMiddlewareOptions) {
+export function createAuthMiddleware({secret, userRepository, logger = console, isFindEmail }: AuthMiddlewareOptions) {
     if (!secret || typeof secret !== 'string') {
         logger.error('[AuthV2] secret is required and must be a string.')
         throw new Error('[AuthV2] secret is required and must be a string.')
@@ -64,22 +61,31 @@ export function createAuthMiddleware({secret, userRepository, logger = console }
         const authHeader = req.headers?.authorization
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             logger.warn('[AuthV2] Missing or malformed authorization header.')
-            next(generateError(PERMISSION_DENIED_STATUS_CODE, FailedMessageMap.missing))
+            next(generateError(1015))
             return
         }
 
         const [, token] = authHeader.split(' ')
         if (!token) {
             logger.warn('[AuthV2] Token not found in authorization header.')
-            next(generateError(PERMISSION_DENIED_STATUS_CODE, FailedMessageMap.missing))
+            next(generateError(1015))
             return
         }
 
         try {
             const verifyResult = await verifyJWT(token, secret)
-            const user = await userRepository.findOneBy({ id: verifyResult.id })
+            let user = null;
+
+            if (isFindEmail)
+                user = await userRepository.findOneBy({ email: verifyResult.email })
+            else                
+                user = await userRepository.findOneBy({ id: verifyResult.id })
+
             if (!user) {
-                next(generateError(PERMISSION_DENIED_STATUS_CODE, FailedMessageMap.invalid))
+                if (isFindEmail)
+                    next(generateError(1017))
+                else
+                    next(generateError(1014))
                 return
             }
 
