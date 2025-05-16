@@ -80,7 +80,7 @@ export class OrganizerEntity {
     user!: UserEntity;
 
     // 🔁 多個活動關聯
-    @OneToMany(() => ActivityEntity, activity => activity.orgainzer)
+    @OneToMany(() => ActivityEntity, activity => activity.organizer)
     activity!: ActivityEntity[];
 
 
