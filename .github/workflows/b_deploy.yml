@@ -1,7 +1,7 @@
 # Workflow 名稱，會顯示在 GitHub Actions UI 上
 name: Deploy Backend via Docker Compose
 
-# 這個 GitHub Action 用來自動化部署 Vue.js 前端專案到 EC2 上
+# 這個 GitHub Action 用來自動化部署 Vue.js 後端專案到 EC2 上
 on:
     push:
         tags:
@@ -84,11 +84,11 @@ jobs:
         run: |
             STATUS="${{ job.status }}"
             COLOR="✅"
-            MESSAGE="goticket 前端專案部署成功！ 🚀"
+            MESSAGE="goticket 後端專案部署成功！ 🚀"
 
             if [ "$STATUS" != "success" ]; then
               COLOR="❌"
-              MESSAGE="goticket 前端專案部署失敗！ ❗️"
+              MESSAGE="goticket 後端專案部署失敗！ ❗️"
             fi
 
             # ✅ Discord 通知
