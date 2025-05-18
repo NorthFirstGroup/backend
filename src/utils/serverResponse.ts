@@ -18,6 +18,11 @@ const codeMessageMap: Record<number, string> = {
     1010: '無效日期',
     1011: '網址不符合規則',
     1012: '新密碼與舊密碼相同',
+    1013: '檔案上傳失敗',
+    1014: '無效的 Token',
+    1015: '請先登入',
+    1016: '使用者尚未成為廠商',
+    1017: 'Token 已過期',
 
     5555: '伺服器錯誤',
 }
@@ -66,7 +71,7 @@ export default function responseSend(resData: ResponseData, logger?: Logger) {
         logger.warn(data)
     }
 
-    switch (code) {
+        switch (code) {
         case 2000:
             res.status(200).json(responseData)
             break

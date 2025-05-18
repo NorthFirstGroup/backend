@@ -1,6 +1,6 @@
 {
   "name": "go-ticket-backend",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,7 +12,9 @@
     "stop": "docker compose --env-file .env stop",
     "clean": "docker compose --env-file .env down -v",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint:fix": "eslint . --ext .ts --fix",
+    "version:major": "export ENV_ASSIGN='major' && chmod +x ./version-up.sh && ./version-up.sh",
+    "version:patch": "export ENV_ASSIGN='patch' && chmod +x ./version-up.sh && ./version-up.sh"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +25,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
+    "@types/formidable": "^3.4.5",
     "@types/ioredis": "^4.28.10",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.14.1",
@@ -38,12 +41,15 @@
     "typescript-eslint": "^8.29.1"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.808.0",
+    "@aws-sdk/s3-request-presigner": "^3.808.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-jwt": "^8.5.1",
+    "formidable": "^3.5.4",
     "ioredis": "^5.6.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^7.0.0",

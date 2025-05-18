@@ -12,9 +12,20 @@ import { getAuthUser } from '../middlewares/auth'
 import { dbEntityNameUser, UserRole } from '../entities/User'
 import { dbEntityNameArea } from '../entities/Area'
 import { In } from 'typeorm'
+import formidable from 'formidable'
+import { uploadUserAvatar, getUserAvatarUrl } from '../utils/uploadFile'
+import path from 'path'
 
 const saltRounds = 10
 const logger = getLogger('User')
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const ALLOWED_MIME_TYPES = {
+    'image/jpeg': true,
+    'image/png': true,
+    'image/gif': true
+} as const;
+type AllowedMimeTypes = keyof typeof ALLOWED_MIME_TYPES;
 
 /** 註冊 */
 export async function postSignup(req: JWTRequest, res: Response, next: NextFunction, version = 'v1') {
@@ -67,7 +78,7 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
 
         if (version === 'v2') {
             const token = await generateJWT(
-                { id: savedUser.id },
+                { id: savedUser.id, role: savedUser.role },
                 config.get('secret.jwtSecret'),
                 { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
             )
@@ -76,6 +87,7 @@ export async function postSignup(req: JWTRequest, res: Response, next: NextFunct
                 token,
                 user: {
                     name: savedUser.nick_name,
+                    role: savedUser.role,
                 },
             }))
             return
@@ -113,7 +125,7 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
 
         const userRepository = dataSource.getRepository(dbEntityNameUser)
         const existingUser = await userRepository.findOne({
-            select: ['id', 'nick_name', 'password_hash'],
+            select: ['id', 'nick_name', 'password_hash', 'role'],
             where: { email },
         })
 
@@ -129,7 +141,7 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
         }
 
         const token = await generateJWT(
-            { id: existingUser.id },
+            { id: existingUser.id, role: existingUser.role },
             config.get('secret.jwtSecret'),
             { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
         )
@@ -138,6 +150,7 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
             token,
             user: {
                 name: existingUser.nick_name,
+                role: existingUser.role,
             },
         }))
     } catch (error) {
@@ -163,12 +176,13 @@ export async function getProfile(req: JWTRequest, res: Response, next: NextFunct
             return
         }
 
+        const url = await getUserAvatarUrl(id, user.profile_url)
         responseSend(initResponseData(res, 2000, {
             name: user.nick_name,
             phone_num: user.phone || '',
             birth_date: user.birth_date || '',
             location_ids: user.location_ids || [],
-            profile_url: user.profile_url || '',
+            profile_url: url,
         }))
     } catch (error) {
         logger.error('取得使用者資料錯誤:', error)
@@ -286,6 +300,59 @@ export async function putPassword(req: JWTRequest, res: Response, next: NextFunc
         responseSend(initResponseData(res, 2000))
     } catch (error) {
         logger.error('更新使用者密碼錯誤:', error)
+        next(error)
+    }
+}
+
+/** 上傳使用者圖片 */
+export async function postUpload(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id } = getAuthUser(req)
+        const userRepository = dataSource.getRepository(dbEntityNameUser)
+        const user = await userRepository.findOne({
+            where: { id },
+        })
+
+        if (!user) {
+            responseSend(initResponseData(res, 1008), logger)
+            return
+        }
+
+        const form = formidable({
+            multiples: false,
+            maxFileSize: MAX_FILE_SIZE,
+            allowEmptyFiles: false,
+            filter: ({ mimetype }) => {
+                if (!mimetype) return false
+                return !!ALLOWED_MIME_TYPES[mimetype as AllowedMimeTypes]
+            }
+        })
+
+        const [fields, files] = await form.parse(req)
+        // console.log('files:', files)
+        // console.log('fields:', fields)
+        const userId : string | undefined = fields.user_id? fields.user_id[0] : fields.user_id
+        if (userId !== id) {
+            responseSend(initResponseData(res, 1008), logger)
+            return
+        }
+
+        const rawFile = files.file
+        const file: formidable.File | undefined = Array.isArray(rawFile) ? rawFile[0] : rawFile;
+        if (!file || !file.filepath) {
+            logger.error('No file uploaded')
+            responseSend(initResponseData(res, 1013), logger)
+            return
+        }
+
+        await uploadUserAvatar(file, id);
+        const fileExt = path.extname(file.originalFilename || '')
+        user.profile_url = `avatar${fileExt}`
+        await userRepository.save(user)
+        const url = await getUserAvatarUrl(id, user.profile_url)
+        responseSend(initResponseData(res, 2000, { url }))
+    } catch (error) {
+        logger.error('上傳圖片錯誤:', error)
         next(error)
     }
 }

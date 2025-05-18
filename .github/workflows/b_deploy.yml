@@ -1,0 +1,114 @@
+# Workflow 名稱，會顯示在 GitHub Actions UI 上
+name: Deploy Backend via Docker Compose
+
+# 這個 GitHub Action 用來自動化部署 Vue.js 前端專案到 EC2 上
+on:
+    push:
+        tags:
+            - 'v*.*.*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest                           # 使用 GitHub 提供的 Ubuntu runner 執行流程
+
+    steps:
+      - name: Checkout code                          # 第一步：拉取 GitHub Repo 原始碼到 runner
+        uses: actions/checkout@v3
+
+      - name: Upload all files to EC2                # 上傳整個專案到 EC2 的指定資料夾
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}              # EC2 公網 IP（從 Secrets 抓）
+          username: ${{ secrets.EC2_USER }}          # 通常是 ubuntu 使用者
+          key: ${{ secrets.EC2_KEY }}                # EC2 私鑰（不要 commit！）
+          source: "."                                # 上傳整個 repo（含 Dockerfile 等）
+          target: "~/project/goticket/CICD/backend"  # 上傳到 EC2 的資料夾位置
+
+      - name: Create .env file on EC2                # 遠端建立後端用的 .env 環境變數檔案
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cat <<EOF > ~/project/goticket/CICD/backend/.env
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            DB_HOST=postgres
+            DB_PORT=5432
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_DATABASE=${{ secrets.DB_DATABASE }}
+            DB_SYNCHRONIZE=true
+            DB_ENABLE_SSL=false
+
+            REDIS_HOST=redis
+            REDIS_PORT=6379
+
+            PORT=8080
+            LOG_LEVEL=debug
+
+            JWT_EXPIRES_DAY=30d
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+            MAIL_USER=${{ secrets.MAIL_USER }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            MAIL_JWT_EXPIRES_MINUTE=5m
+
+            AWS_S3_REGION=${{ secrets.AWS_S3_REGION }}
+            AWS_S3_ACCESS_KEY_ID=${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+            AWS_S3_SECRET_ACCESS_KEY=${{ secrets.AWS_S3_SECRET_ACCESS_KEY }}
+            AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
+            EOF
+
+      - name: SSH into EC2 and build + restart Docker  # 執行 npm build 和重啟 Docker 容器
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/project/goticket/CICD/backend            # 切換到上傳的資料夾
+            npm install                                   # 安裝後端依賴
+            npm run build                                 # 編譯 TypeScript 程式碼
+            docker compose --env-file .env down           # 停止現有容器
+            docker compose --env-file .env up -d --build  # 重新建置並啟動容器
+
+      - name: Get latest commit message  # 取得最新一次 commit 訊息（用於通知）
+        id: commit
+        run: echo "message=$(git log -1 --pretty=format:'%s')" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord & LINE (success or failure)
+        if: always()
+        run: |
+            STATUS="${{ job.status }}"
+            COLOR="✅"
+            MESSAGE="goticket 前端專案部署成功！ 🚀"
+
+            if [ "$STATUS" != "success" ]; then
+              COLOR="❌"
+              MESSAGE="goticket 前端專案部署失敗！ ❗️"
+            fi
+
+            # ✅ Discord 通知
+            curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"content\": \"$COLOR $MESSAGE\n📦 專案：${{ github.repository }}\n👤 推送者：${{ github.event.pusher.name }}\n🌿 分支：${{ github.ref_name }}\n🕐 時間：$(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M')\"
+              }"
+
+            # ✅ LINE 通知
+            curl -X POST https://api.line.me/v2/bot/message/push \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}" \
+              -d "{
+                \"to\": \"${{ secrets.LINE_GROUP_ID }}\",
+                \"messages\": [
+                  {
+                    \"type\": \"text\",
+                    \"text\": \"$COLOR $MESSAGE\n📦 Repo：${{ github.repository }}\n👤 推送者：${{ github.actor }}\n🌿 分支：${{ github.ref_name }}\n🕐 時間：$(date '+%Y-%m-%d %H:%M')\"
+                  }
+                ]
+              }"
+        # 發送 Discord, Line 通知，告知部署狀態
