@@ -28,3 +28,23 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
     next(error)
   }
 }
+
+export async function getRecommend(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        // 取得資料
+        const activityRepository = dataSource.getRepository(DbEntity.Activity)
+
+        const recommends = await activityRepository.find({
+            select: ['id', 'name', 'category', 'cover_image', 'start_time', 'end_time']
+        })
+
+        if (!recommends || recommends.length === 0) {
+            return responseSend(initResponseData(res, 1018))
+        }
+
+        return responseSend(initResponseData(res, 2000, {results: recommends}))
+    } catch (error) {
+        logger.error('getRecommend 錯誤', error)
+        next(error)
+    }
+}
