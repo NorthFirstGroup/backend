@@ -15,7 +15,7 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
 
     const activity = await activityRepository.findOne({
         where: { id: activity_id },
-        select: ['id', 'name', 'category', 'cover_image', 'description', 'information']
+        select: ['id', 'name', 'category_id', 'cover_image', 'description', 'information']
     })
 
     if (!activity) {
@@ -34,9 +34,19 @@ export async function getRecommend(req: JWTRequest, res: Response, next: NextFun
         // 取得資料
         const activityRepository = dataSource.getRepository(DbEntity.Activity)
 
-        const recommends = await activityRepository.find({
-            select: ['id', 'name', 'category', 'cover_image', 'start_time', 'end_time']
-        })
+        // 隨機取得 10 筆資料
+        const recommends = await activityRepository.createQueryBuilder('activity')
+            .select([
+                'activity.id',
+                'activity.name',
+                'activity.category_id',
+                'activity.cover_image',
+                'activity.start_time',
+                'activity.end_time',
+            ])
+            .orderBy('RANDOM()')
+            .limit(10)
+            .getMany()
 
         if (!recommends || recommends.length === 0) {
             return responseSend(initResponseData(res, 1018))
