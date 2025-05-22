@@ -96,8 +96,15 @@ export async function getComingSoon(req: JWTRequest, res: Response, next: NextFu
     // 取得清單資料
     const activityRepository = dataSource.getRepository(DbEntity.Activity)
 
+    const now = new Date()
+    const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 三天後的日期
+
     const comingSoons = await activityRepository.find({
-      select: ['id', 'name', 'cover_image', 'category_id', 'sales_start_time']
+      select: ['id', 'name', 'cover_image', 'category_id', 'sales_start_time'],
+      order: { sales_start_time: 'ASC' },
+      where: {
+        sales_start_time: Between(now, threeDaysLater),
+      }
     })
 
     if (!comingSoons || comingSoons.length === 0) {
