@@ -46,3 +46,23 @@ export async function getHotTopics(req: JWTRequest, res: Response, next: NextFun
     next(error)
   }
 }
+
+export async function getNewArrivals(req: JWTRequest, res: Response, next: NextFunction) {
+  try {
+    // 取得清單資料
+    const activityRepository = dataSource.getRepository(DbEntity.Activity)
+
+    const newArrivals = await activityRepository.find({
+      select: ['id', 'name', 'cover_image', 'category']
+    })
+
+    if (!newArrivals || newArrivals.length === 0) {
+      return responseSend(initResponseData(res, 1018))
+    }
+
+    return responseSend(initResponseData(res, 2000, {results: newArrivals}))
+  } catch (error) {
+    logger.error('getNewArrivals 錯誤:', error)
+    next(error)
+  }
+}
