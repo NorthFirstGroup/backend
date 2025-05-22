@@ -21,5 +21,6 @@ const auth = createAuthMiddleware({
 // 路由定義
 router.get('/top', frontpageController.getTop)
 router.get('/hot-topics', frontpageController.getHotTopics)
+router.get('/new-arrivals', frontpageController.getNewArrivals)
 
 export default router
