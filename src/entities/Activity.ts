@@ -32,7 +32,7 @@ export class ActivityEntity {
     @Column({ type: 'uuid', nullable: false })
     organizer_id!: string;
 
-    @Column({ type: 'int', nullable: false })
+    @Column({ type: 'int', nullable: true })
     category_id!: number;
 
     @Column({ type: 'int', default: 1, nullable: false })

@@ -46,11 +46,11 @@ export class OrganizerEntity {
     status!: number;
 
     /** 統一編號 */
-    @Column({ type: 'varchar', length: 8, nullable: false })
+    @Column({ type: 'varchar', length: 8, nullable: true })
     ubn!: string;
 
     /** 負責人 */
-    @Column({ type: 'varchar', length: 20, nullable: false })
+    @Column({ type: 'varchar', length: 20, nullable: true })
     president!: string;
 
     /** 電話 */

@@ -20,6 +20,7 @@ const auth = createAuthMiddleware({
 })
 
 // 路由定義
-router.post('/apply', auth, isOrganizer, organizerController.postApply)
+router.post('/apply', organizerController.postApply)
+router.post('/activity', organizerController.postActivity)
 
 export default router
