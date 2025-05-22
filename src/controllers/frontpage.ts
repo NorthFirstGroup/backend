@@ -26,3 +26,23 @@ export async function getTop(req: JWTRequest, res: Response, next: NextFunction)
     next(error)
   }
 }
+
+export async function getHotTopics(req: JWTRequest, res: Response, next: NextFunction) {
+  try {
+    // 取得清單資料
+    const activityRepository = dataSource.getRepository(DbEntity.Activity)
+
+    const topics = await activityRepository.find({
+      select: ['id', 'name', 'cover_image', 'category_id', 'start_time', 'end_time']
+    })
+
+    if (!topics || topics.length === 0) {
+      return responseSend(initResponseData(res, 1018))
+    }
+
+    return responseSend(initResponseData(res, 2000, {results: topics}))
+  } catch (error) {
+    logger.error('getHotTopics 錯誤:', error)
+    next(error)
+  }
+}
