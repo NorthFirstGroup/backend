@@ -23,6 +23,7 @@ const codeMessageMap: Record<number, string> = {
     1015: '請先登入',
     1016: '使用者尚未成為廠商',
     1017: 'Token 已過期',
+    1018: '查無清單資料',
 
     5555: '伺服器錯誤',
 }
