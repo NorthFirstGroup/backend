@@ -22,5 +22,6 @@ const auth = createAuthMiddleware({
 router.get('/top', frontpageController.getTop)
 router.get('/hot-topics', frontpageController.getHotTopics)
 router.get('/new-arrivals', frontpageController.getNewArrivals)
+router.get('/low-stock', frontpageController.getLowStock)
 
 export default router
