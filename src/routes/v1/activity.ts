@@ -19,6 +19,9 @@ const auth = createAuthMiddleware({
 })
 
 // 路由定義
+router.get('/recommend', activityController.getRecommend)
+
+//動態參數放最後
 router.get('/:activity_id', activityController.getActivity)
 
 export default router
