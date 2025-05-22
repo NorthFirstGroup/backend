@@ -86,3 +86,23 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
     next(error)
   }
 }
+
+export async function getComingSoon(req: JWTRequest, res: Response, next: NextFunction) {
+  try {
+    // 取得清單資料
+    const activityRepository = dataSource.getRepository(DbEntity.Activity)
+
+    const comingSoons = await activityRepository.find({
+      select: ['id', 'name', 'cover_image', 'category_id', 'sales_start_time']
+    })
+
+    if (!comingSoons || comingSoons.length === 0) {
+      return responseSend(initResponseData(res, 1018))
+    }
+
+    return responseSend(initResponseData(res, 2000, {results: comingSoons}))
+  } catch (error) {
+    logger.error('getComingSoon 錯誤:', error)
+    next(error)
+  }
+}
