@@ -2,15 +2,27 @@ import { Response, NextFunction } from 'express'
 import { Request as JWTRequest } from 'express-jwt'
 import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
+import { dataSource } from '../db/data-source'
+import { DbEntity } from '../constants/dbEntity'
 
-const logger = getLogger('Forntpage')
+const logger = getLogger('Frontpage')
 
 export async function getTop(req: JWTRequest, res: Response, next: NextFunction) {
-    try {
+  try {
+    // 取得清單資料
+    const activityRepository = dataSource.getRepository(DbEntity.Activity)
 
-        responseSend(initResponseData(res, 2000))
-    } catch (error) {
-        logger.error('getTop 錯誤:', error)
-        next(error)
+    const tops = await activityRepository.find({
+      select: ['id', 'name', 'cover_image'],
+    })
+
+    if (!tops || tops.length === 0) {
+      return responseSend(initResponseData(res, 1018))
     }
+
+    return responseSend(initResponseData(res, 2000, {results: tops}))
+  } catch (error) {
+    logger.error('getTop 錯誤:', error)
+    next(error)
+  }
 }
