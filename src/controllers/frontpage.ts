@@ -66,3 +66,23 @@ export async function getNewArrivals(req: JWTRequest, res: Response, next: NextF
     next(error)
   }
 }
+
+export async function getLowStock(req: JWTRequest, res: Response, next: NextFunction) {
+  try {
+    // 取得清單資料
+    const activityRepository = dataSource.getRepository(DbEntity.Activity)
+
+    const lowStocks = await activityRepository.find({
+      select: ['id', 'name', 'cover_image', 'category_id', 'start_time', 'end_time']
+    })
+
+    if (!lowStocks || lowStocks.length === 0) {
+      return responseSend(initResponseData(res, 1018))
+    }
+
+    return responseSend(initResponseData(res, 2000, {results: lowStocks}))
+  } catch (error) {
+    logger.error('getLowStock 錯誤:', error)
+    next(error)
+  }
+}
