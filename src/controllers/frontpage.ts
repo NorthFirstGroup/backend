@@ -4,6 +4,7 @@ import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
 import { dataSource } from '../db/data-source'
 import { DbEntity } from '../constants/dbEntity'
+import { Between } from 'typeorm'
 
 const logger = getLogger('Frontpage')
 
@@ -52,8 +53,11 @@ export async function getNewArrivals(req: JWTRequest, res: Response, next: NextF
     // 取得清單資料
     const activityRepository = dataSource.getRepository(DbEntity.Activity)
 
+    // 取得全新登場近到遠
     const newArrivals = await activityRepository.find({
-      select: ['id', 'name', 'cover_image', 'category_id']
+      select: ['id', 'name', 'cover_image', 'category_id'],
+      order: { created_at: 'DESC' },
+      take: 10,
     })
 
     if (!newArrivals || newArrivals.length === 0) {
