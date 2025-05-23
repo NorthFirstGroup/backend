@@ -55,7 +55,7 @@ export async function getUserAvatarUrl(userId: string, filename: string): Promis
     try {
         const key = `user/${userId}/${filename}` // S3 上的檔案路徑
         const exists = await doesS3ObjectExist(bucketName, key)
-        if (!exists) return null
+        if (!exists) return '';
 
         const command = new GetObjectCommand({
             Bucket: bucketName,
