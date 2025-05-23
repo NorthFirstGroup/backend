@@ -182,7 +182,7 @@ export async function getProfile(req: JWTRequest, res: Response, next: NextFunct
             phone_num: user.phone || '',
             birth_date: user.birth_date || '',
             location_ids: user.location_ids || [],
-            profile_url: url,
+            profile_url: url || '',
         }))
     } catch (error) {
         logger.error('取得使用者資料錯誤:', error)
