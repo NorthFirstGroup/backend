@@ -106,3 +106,50 @@ export async function getShowtimeAll(req: JWTRequest, res: Response, next: NextF
         next(error)
     }
 }
+
+export async function getShowtime(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        // 取得資料
+        const showtimesRepository = dataSource.getRepository(DbEntity.Showtimes)
+
+        // 查詢指定場次，並載入關聯的場地、活動、座位區
+        const showtime = await showtimesRepository.findOne({
+            where: {
+                id: req.params.showtime_id,
+                activity_id: req.params.activity_id,
+            },
+            relations: {
+                site: true,
+                activity: true,
+                showtimeSections: true,
+            }
+        });
+
+        if (!showtime) {
+            return responseSend(initResponseData(res, 1018)); // 查無資料
+        }
+
+        // 轉換成回傳資料格式
+        const result = {
+            activity_id: String(showtime.activity.id),
+            name: showtime.activity.name,
+            showtime_id: showtime.id,
+            start_time: Math.floor(new Date(showtime.start_time).getTime() / 1000),
+            location: showtime.site.name,
+            address: showtime.site.address,
+            seat_image: showtime.seat_image,
+            seats: showtime.showtimeSections.map((section: any) => ({
+                id: section.id,
+                section: section.section,
+                price: section.price,
+                capacity: section.capacity,
+                vacancy: section.vacancy,
+            }))
+        };
+
+        return responseSend(initResponseData(res, 2000, result))
+    } catch (error) {
+        logger.error('getShowtime 錯誤', error)
+        next(error)
+    }
+}
