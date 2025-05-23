@@ -51,8 +51,9 @@ export async function uploadUserAvatar(file: formidable.File, userId: string) {
     }
 }
 
-export async function getUserAvatarUrl(userId: string, filename: string): Promise<string | null> {
+export async function getUserAvatarUrl(userId: string, filename: string): Promise<string> {
     try {
+        if (!userId || !filename) return '';
         const key = `user/${userId}/${filename}` // S3 上的檔案路徑
         const exists = await doesS3ObjectExist(bucketName, key)
         if (!exists) return '';
@@ -66,6 +67,6 @@ export async function getUserAvatarUrl(userId: string, filename: string): Promis
         return url
     } catch (error) {
         logger.error('取得圖片失敗', error)
-        throw new Error('取得圖片失敗')
+        return ''
     }
 }
