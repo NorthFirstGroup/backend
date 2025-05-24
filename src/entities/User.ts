@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { AreaEntity } from './Area'
+import { OrderEntity } from './Order';
 
 /** 使用者角色類型 */
 export enum UserRole {
@@ -69,110 +70,8 @@ export class UserEntity {
         inverseJoinColumn: { name: 'area_id', referencedColumnName: 'id' },
     })
     location_ids!: AreaEntity[];
+
+    /** 一個用戶有多個訂單 */
+    @OneToMany(() => OrderEntity, (order) => order.user)
+    orders!: OrderEntity[];
 }
-
-/** 未關聯前 schema 寫法如下 */
-
-/** User 資料表對應的型別結構 */
-// export interface User {
-//     /** uuid */
-//     id: string
-//     /** 名稱 */
-//     nick_name: string
-//     /** 等同帳號 */
-//     email: string
-//     /** 密碼 */
-//     password_hash: string
-//     /** 狀態 1: 開通, 0: 未開通 */
-//     status: number
-//     /** 角色類型 UserRole */
-//     role: UserRole
-//     /** 手機號碼 */
-//     phone: string
-//     /** 生日 */
-//     birth_date: Date
-//     /** 偏好活動地區 */
-//     location_ids: number[]
-//     /** 頭像 */
-//     profile_url: string
-//     /** 建立時間 */
-//     created_at: Date
-//     /** 更新時間 */
-//     updated_at: Date
-//     /** 軟刪除標記 */
-//     is_deleted: boolean
-// }
-
-/** 使用者 Entity 定義 */
-// export const UserEntity = new EntitySchema<User>({
-//     name: dbEntityNameUser,
-//     tableName: 'USER',
-//     columns: {
-//         id: {
-//             primary: true,
-//             type: 'uuid',
-//             generated: 'uuid',
-//         },
-//         nick_name: {
-//             type: 'varchar',
-//             length: 20,
-//             nullable: false,
-//         },
-//         email: {
-//             type: 'varchar',
-//             length: 100,
-//             nullable: false,
-//             unique: true,
-//         },
-//         password_hash: {
-//             type: 'varchar',
-//             length: 255,
-//             nullable: false,
-//             select: false,
-//         },
-//         status: {
-//             type: 'int',
-//             nullable: false,
-//             default: 0,
-//         },
-//         role: {
-//             type: 'varchar',
-//             length: 20,
-//             nullable: false,
-//             default: UserRole.USER,
-//         },
-//         phone: {
-//             type: 'varchar',
-//             length: 10,
-//             nullable: true,
-//         },
-//         birth_date: {
-//             type: 'date',
-//             nullable: true,
-//         },
-//         location_ids: {
-//             type: 'int',
-//             array: true,
-//             nullable: true,
-//         },
-//         profile_url: {
-//             type: 'text',
-//             nullable: true,
-//         },
-//         created_at: {
-//             type: 'timestamp',
-//             createDate: true,
-//             nullable: false,
-//         },
-//         updated_at: {
-//             type: 'timestamp',
-//             updateDate: true,
-//             nullable: false,
-//         },
-//         is_deleted: {
-//             type: 'boolean',
-//             nullable: false,
-//             default: false,
-//         },
-//     }
-// })
