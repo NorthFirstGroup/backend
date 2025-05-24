@@ -21,5 +21,6 @@ const auth = createAuthMiddleware({
 
 // 路由定義
 router.post('/apply', auth, isOrganizer, organizerController.postApply)
+router.post('/upload/image', auth, isOrganizer, organizerController.postUploadImage)
 
 export default router
