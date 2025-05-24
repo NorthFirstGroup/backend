@@ -7,10 +7,7 @@ import {
 } from 'typeorm';
 import { DbEntity } from '../constants/dbEntity';
 
-/**
- *  活動類別
- */
-
+/** 活動類別 */
 @Entity(DbEntity.ActivityType)
 export class ActivityTypeEntity {
   /** 類別ID */

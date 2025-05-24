@@ -9,8 +9,8 @@ export const DbEntity = {
   Showtimes: 'Showtimes', 
   ShowtimeSsections: 'ShowtimeSsections',
   Order: 'Order',
-  OrderTickets: 'OrderTickets',
-  Tickets: 'Tickets',
+  OrderTicket: 'OrderTicket',
+  Ticket: 'Ticket',
   
   
   // other tables...
