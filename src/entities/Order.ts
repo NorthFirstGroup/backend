@@ -13,6 +13,7 @@ import { DbEntity } from '../constants/dbEntity'
 import { UserEntity } from './User'
 import { OrderTicketEntity } from './OrderTicket'
 import { TicketEntity } from './Ticket'
+import { ShowtimesEntity } from './Showtimes'
 
 /** 訂單狀態類型 */
 export enum OrderStatus {
@@ -102,15 +103,20 @@ export class OrderEntity {
     updated_at!: Date
 
     /** 一個用戶有多個訂單 */
-    @ManyToOne(() => UserEntity, (user) => user.orders)
+    @ManyToOne(() => UserEntity, user => user.orders)
     @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
     user!: UserEntity
 
+    /** 一個場次有多個訂單 */
+    @ManyToOne(() => ShowtimesEntity, showtime => showtime.orders)
+    @JoinColumn({ name: 'showtime_id', referencedColumnName: 'id' })
+    showtime!: ShowtimesEntity
+
     /** 一張訂單有多個區域票券記錄 */
-    @OneToMany(() => OrderTicketEntity, (orderTicket) => orderTicket.order)
+    @OneToMany(() => OrderTicketEntity, orderTicket => orderTicket.order)
     orderTickets!: OrderTicketEntity[];
 
     /** 一張訂單有多張票券 */
-    @OneToMany(() => TicketEntity, (ticket) => ticket.order)
+    @OneToMany(() => TicketEntity, ticket => ticket.order)
     tickets!: TicketEntity[];
 }

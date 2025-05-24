@@ -16,6 +16,7 @@ import { ActivitySiteEntity } from './ActivitySite';
 import { ShowtimeSectionsEntity } from './ShowtimeSections';
 
 import { DbEntity } from '../constants/dbEntity';
+import { OrderEntity } from './Order';
 
 
 @Entity(DbEntity.Showtimes)
@@ -62,6 +63,10 @@ export class ShowtimesEntity {
     // 🔁 一對多：一場次有多個區域票價
     @OneToMany(() => ShowtimeSectionsEntity, section => section.showtime)
     showtimeSections!: ShowtimeSectionsEntity[];
+
+    /** 一場次有多個張訂單 */
+    @OneToMany(() => OrderEntity, order => order.showtime)
+    orders!: OrderEntity[];
 }
 
 

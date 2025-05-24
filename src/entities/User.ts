@@ -63,7 +63,7 @@ export class UserEntity {
     is_deleted!: boolean;
 
     /** 偏好活動地區(多對多) */
-    @ManyToMany(() => AreaEntity, (area) => area.users)
+    @ManyToMany(() => AreaEntity, area => area.users)
     @JoinTable({
         name: 'User_Area',
         joinColumn: { name: 'user_id', referencedColumnName: 'id' },
@@ -72,6 +72,6 @@ export class UserEntity {
     location_ids!: AreaEntity[];
 
     /** 一個用戶有多個訂單 */
-    @OneToMany(() => OrderEntity, (order) => order.user)
+    @OneToMany(() => OrderEntity, order => order.user)
     orders!: OrderEntity[];
 }

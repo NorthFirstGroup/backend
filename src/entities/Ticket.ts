@@ -70,12 +70,12 @@ export class TicketEntity {
     updated_at!: Date
 
     /** 訂單關聯 */
-    @ManyToOne(() => OrderEntity, (order) => order.tickets)
+    @ManyToOne(() => OrderEntity, order => order.tickets)
     @JoinColumn({ name: 'order_id', referencedColumnName: 'id' })
     order!: OrderEntity
 
     /** 訂單區域關聯 */
-    @ManyToOne(() => OrderTicketEntity, (orderTicket) => orderTicket.tickets)
+    @ManyToOne(() => OrderTicketEntity, orderTicket => orderTicket.tickets)
     @JoinColumn({ name: 'order_ticket_id', referencedColumnName: 'id' })
     orderTicket!: OrderTicketEntity
 }
