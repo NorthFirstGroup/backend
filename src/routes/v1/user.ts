@@ -3,6 +3,7 @@ import config from '../../config'
 import { dataSource } from '../../db/data-source'
 import getLogger from '../../utils/logger'
 import * as userController from '../../controllers/user'
+import * as orderController from '../../controllers/order';
 import { createAuthMiddleware } from '../../middlewares/auth'
 import { dbEntityNameUser } from '../../entities/User'
 
@@ -25,5 +26,5 @@ router.get('/profile', auth, userController.getProfile)
 router.put('/profile', auth, userController.putProfile)
 router.put('/password', auth, userController.putPassword)
 router.post('/upload', auth, userController.postUpload)
-
+router.post('/order', auth, orderController.postCreateOrder)
 export default router
