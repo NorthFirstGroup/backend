@@ -5,6 +5,7 @@ import app from './app'
 import { dataSource } from './db/data-source'
 import { redis } from './db/redis-source'
 import { initAreaCache } from './utils/areaCache'
+import { initSeatInventoryService } from './utils/seatInventory'
 
 const logger = getLogger('www')
 
@@ -59,6 +60,7 @@ server.listen(port, async () => {
         await redis.ping()
         logger.info('Redis 連線成功')
         initAreaCache(dataSource, redis)
+        initSeatInventoryService(redis)
     } catch (error: unknown) {
         if (error instanceof Error) {
             logger.error(`Redis 連線失敗: ${error.message}`)
