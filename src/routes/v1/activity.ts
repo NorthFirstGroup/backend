@@ -23,5 +23,7 @@ router.get('/recommend', activityController.getRecommend)
 
 //動態參數放最後
 router.get('/:activity_id', activityController.getActivity)
+router.get('/:activity_id/showtime', activityController.getShowtimeAll)
+router.get('/:activity_id/showtime/:showtime_id', activityController.getShowtime)
 
 export default router

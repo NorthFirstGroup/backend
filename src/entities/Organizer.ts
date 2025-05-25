@@ -9,26 +9,11 @@ import {
     Index,
     OneToMany
   } from 'typeorm';
-// import { OrganizerEntity } from './Organizer'
 import { DbEntity } from '../constants/dbEntity';
 import { UserEntity } from './User'
 import { ActivityEntity } from './Activity'
-/**
- *  廠商資料表
- */
 
-
-/** 使用者角色類型 */
-export enum UserRole {
-    /** 一般使用者 */
-    USER = 'USER',
-    /** 活動廠商 */
-    ORGANIZER = 'ORGANIZER',
-}
-
-/** 資料庫用的 Entity 名稱 */
-// export const dbEntityNameUser = 'Organizer'
-
+/** 廠商資料表 */
 @Entity(DbEntity.Organizer)
 export class OrganizerEntity {
     @PrimaryGeneratedColumn('uuid')
@@ -37,7 +22,7 @@ export class OrganizerEntity {
     @Column({ type: 'varchar', length: 100, nullable: false })
     name!: string;
 
-    /** 用戶 ID - 關聯至 User，允許一位使用者建立多個廠商 */
+    /** 用戶 ID - 關聯至 User，允許一位使用者建立一個廠商 */
     @Column({ type: 'uuid', nullable: false })
     user_id!: string;
 
