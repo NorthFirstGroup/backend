@@ -25,6 +25,49 @@ export enum OrderStatus {
     CANCELLED = 'CANCELLED',
 }
 
+export enum PaymentMethod {
+    /** 信用卡/金融卡 (藍新主要支援的類型) */
+    CREDIT_CARD = 'CREDIT_CARD',
+    /** 網路 ATM */
+    WEB_ATM = 'WEB_ATM',
+    /** 超商條碼 */
+    BARCODE = 'BARCODE',
+    /** 超商代碼 */
+    CVS_CODE = 'CVS_CODE',
+    /** 銀行轉帳 */
+    BANK_TRANSFER = 'BANK_TRANSFER',
+    /** 其他支付方式 */
+    OTHER = 'OTHER',
+}
+
+export enum PaymentStatus {
+    /** 待付款 (訂單已建立，等待用戶完成支付) */
+    PENDING = 'PENDING',
+    /** 支付成功 (款項已收到並確認) */
+    PAID = 'PAID',
+    /** 支付失敗 (支付過程中發生錯誤，款項未收到) */
+    FAILED = 'FAILED',
+    /** 已退款 (訂單已取消並退款) */
+    REFUNDED = 'REFUNDED',
+    /** 支付超時 (在規定時間內未完成支付) */
+    EXPIRED = 'EXPIRED',
+    /** 支付取消 (用戶主動取消支付流程) */
+    CANCELLED = 'CANCELLED',
+    /** 部分退款 (訂單部分退款) */
+    //PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED', // 可選
+}
+
+export enum PickupStatus {
+    /** 未取票 (支付成功但尚未取票) */
+    NOT_PICKED_UP = 'NOT_PICKED_UP',
+    /** 已取票 (用戶已成功領取票券) */
+    PICKED_UP = 'PICKED_UP',
+    /** 已失效 (例如，因活動取消或退款導致票券失效) */
+    INVALID = 'INVALID',
+    /** 待處理 (如果需要人工介入處理取票，可使用此狀態) */
+    PROCESSING = 'PROCESSING', // 可選
+}
+
 @Entity(DbEntity.Order)
 @Index(['created_at'])
 @Index(['order_number'])
@@ -52,7 +95,7 @@ export class OrderEntity {
         type: 'varchar',
         length: 20,
         nullable: false,
-        default: 'PROCESSING',
+        default: OrderStatus.PROCESSING,
         enum: OrderStatus,
     })
     status!: OrderStatus
@@ -65,22 +108,35 @@ export class OrderEntity {
     @Column({ type: 'numeric', precision: 10, scale: 2, nullable: false })
     total_price!: number
 
-    /** 付款方式，預設為Credit Card，禁止為空 */
+    /** 付款方式，禁止為空 */
     @Column({
         type: 'varchar',
         length: 20,
         nullable: false,
-        default: 'Credit Card',
+        default: PaymentMethod.CREDIT_CARD,
+        enum: PaymentMethod,
     })
-    payment_method!: string
+    payment_method!: PaymentMethod
 
-    /** 付款狀態，預設為0，禁止為空 */
-    @Column({ type: 'smallint', nullable: false, default: 0 })
-    payment_status!: number
+    /** 付款狀態，禁止為空 */
+    @Column({
+        type: 'varchar',
+        length: 20,
+        nullable: false,
+        default: PaymentStatus.PENDING,
+        enum: PaymentStatus,
+    })
+    payment_status!: PaymentStatus;
 
-    /** 取票狀態，預設為0，禁止為空 */
-    @Column({ type: 'smallint', nullable: false, default: 0 })
-    pickup_status!: number
+    /** 取票狀態，禁止為空 */
+    @Column({
+        type: 'varchar',
+        length: 20,
+        nullable: false,
+        default: PickupStatus.NOT_PICKED_UP,
+        enum: PickupStatus,
+    })
+    pickup_status!: PickupStatus;
 
     /** 訂單建立時間，預設為當前時間，禁止為空 */
     @CreateDateColumn({
