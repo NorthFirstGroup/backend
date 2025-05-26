@@ -7,7 +7,7 @@ export const DbEntity = {
   Activity: 'Activity',
   ActivitySite: 'ActivitySite',
   Showtimes: 'Showtimes', 
-  ShowtimeSsections: 'ShowtimeSsections',
+  ShowtimeSections: 'ShowtimeSections',
   Order: 'Order',
   OrderTicket: 'OrderTicket',
   Ticket: 'Ticket',

@@ -107,3 +107,13 @@ export const isNotValidBirthday = (value: unknown): boolean => {
 
     return false;
 }
+
+/**
+ * 檢查輸入字串是否符合指定的日期格式，並且是有效日期
+ * @param value - 欲驗證的日期字串
+ * @param format - 指定的日期格式，例如 'YYYY-MM-DD HH:mm' 或 'YYYY-MM-DD'
+ * @returns true 表示有效，false 表示無效
+ */
+export const isValidDateFormat = (value: string, format: string): boolean => {
+    return dayjs(value, format, true).isValid();
+  };
