@@ -18,7 +18,7 @@ import { DbEntity } from '../constants/dbEntity';
 
 
 /** 活動場次明細表，各分區票價資料包含座位數與剩餘數量 */
-@Entity(DbEntity.ShowtimeSsections)
+@Entity(DbEntity.ShowtimeSections)
 export class ShowtimeSectionsEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string; // 場次票價分區id
