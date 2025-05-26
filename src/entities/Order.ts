@@ -140,19 +140,19 @@ export class OrderEntity {
 
     /** 訂單建立時間，預設為當前時間，禁止為空 */
     @CreateDateColumn({
-        type: 'timestamp',
+        type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
         nullable: false,
     })
     created_at!: Date
 
     /** 付款時間，可為空 */
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'timestamptz', nullable: true })
     paid_at!: Date
 
     /** 資料更新時間，預設為當前時間，禁止為空 */
     @UpdateDateColumn({
-        type: 'timestamp',
+        type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
         nullable: false,
     })

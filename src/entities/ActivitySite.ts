@@ -60,12 +60,12 @@ export class ActivitySiteEntity {
     }[];
 
     // 資料創建時間
-    @CreateDateColumn({ type: 'timestamp' })
+    @CreateDateColumn({ type: 'timestamptz' })
     @Index()
     created_at!: Date;
 
     // 資料更新時間
-    @UpdateDateColumn({ type: 'timestamp' })
+    @UpdateDateColumn({ type: 'timestamptz' })
     updated_at!: Date;
 
     // 活動關聯

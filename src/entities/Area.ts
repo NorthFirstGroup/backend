@@ -25,10 +25,10 @@ export class AreaEntity {
     @Column({ type: 'varchar', length: 100, nullable: false })
     name!: string
 
-    @CreateDateColumn({ type: 'timestamp', nullable: false })
+    @CreateDateColumn({ type: 'timestamptz', nullable: false })
     created_at!: Date
 
-    @UpdateDateColumn({ type: 'timestamp', nullable: false })
+    @UpdateDateColumn({ type: 'timestamptz', nullable: false })
     updated_at!: Date
 
     @ManyToMany(() => UserEntity, (user) => user.location_ids) // 反向關聯
@@ -53,12 +53,12 @@ export class AreaEntity {
 //             nullable: false,
 //         },
 //         created_at: {
-//             type: 'timestamp',
+//             type: 'timestamptz',
 //             createDate: true,
 //             nullable: false,
 //         },
 //         updated_at: {
-//             type: 'timestamp',
+//             type: 'timestamptz',
 //             updateDate: true,
 //             nullable: false,
 //         },

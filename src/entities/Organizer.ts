@@ -47,12 +47,12 @@ export class OrganizerEntity {
     address!: string;
 
     /** 資料創建時間 */
-    @CreateDateColumn({ type: 'timestamp', nullable: false })
+    @CreateDateColumn({ type: 'timestamptz', nullable: false })
     @Index()
     created_at!: Date;
 
     /** 資料更新時間 */
-    @UpdateDateColumn({ type: 'timestamp', nullable: false })
+    @UpdateDateColumn({ type: 'timestamptz', nullable: false })
     updated_at!: Date;
 
     /** 軟刪除標記 */

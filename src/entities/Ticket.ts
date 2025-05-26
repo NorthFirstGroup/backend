@@ -55,7 +55,7 @@ export class TicketEntity {
 
     /** 票券建立時間，預設為當前時間，禁止為空 */
     @CreateDateColumn({
-        type: 'timestamp',
+        type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
         nullable: false,
     })
@@ -63,7 +63,7 @@ export class TicketEntity {
 
     /** 資料更新時間，預設為當前時間，禁止為空 */
     @UpdateDateColumn({
-        type: 'timestamp',
+        type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
         nullable: false,
     })

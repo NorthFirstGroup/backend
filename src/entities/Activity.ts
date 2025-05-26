@@ -44,16 +44,16 @@ export class ActivityEntity {
     @Column({ type: 'varchar', length: 1000, nullable: true })
     information?: string;
 
-    @Column({ type: 'timestamp', nullable: false })
+    @Column({ type: 'timestamptz', nullable: false })
     start_time!: Date;
 
-    @Column({ type: 'timestamp', nullable: false })
+    @Column({ type: 'timestamptz', nullable: false })
     end_time!: Date;
 
-    @Column({ type: 'timestamp', nullable: false })
+    @Column({ type: 'timestamptz', nullable: false })
     sales_start_time!: Date;
 
-    @Column({ type: 'timestamp', nullable: false })
+    @Column({ type: 'timestamptz', nullable: false })
     sales_end_time!: Date;
 
     @Column({ type: 'text', nullable: false })
@@ -65,11 +65,11 @@ export class ActivityEntity {
     @Column({ type: 'varchar', array: true, nullable: true })
     tags?: string[];
 
-    @CreateDateColumn({ type: 'timestamp' })
+    @CreateDateColumn({ type: 'timestamptz' })
     @Index()
     created_at!: Date;
 
-    @UpdateDateColumn({ type: 'timestamp' })
+    @UpdateDateColumn({ type: 'timestamptz' })
     updated_at!: Date;
 
     @Column({ type: 'boolean', default: false })
