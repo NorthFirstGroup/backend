@@ -51,11 +51,11 @@ export class UserEntity {
     profile_url!: string;
 
     /** 建立時間 */
-    @CreateDateColumn({ type: 'timestamp', nullable: false })
+    @CreateDateColumn({ type: 'timestamptz', nullable: false })
     created_at!: Date;
 
     /** 更新時間 */
-    @UpdateDateColumn({ type: 'timestamp', nullable: false })
+    @UpdateDateColumn({ type: 'timestamptz', nullable: false })
     updated_at!: Date;
 
     /** 軟刪除標記 */

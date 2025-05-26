@@ -34,7 +34,7 @@ export class ShowtimesEntity {
     activity_id!: number;
 
     // 場次開始時間
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'timestamptz', nullable: true })
     start_time!: Date;
 
     // 座位圖片連結
@@ -42,12 +42,12 @@ export class ShowtimesEntity {
     seat_image!: string;
 
     // 資料創建時間（預設為當前時間）
-    @CreateDateColumn({ type: 'timestamp', nullable: false })
+    @CreateDateColumn({ type: 'timestamptz', nullable: false })
     @Index()
     created_at!: Date;
 
     // 資料更新時間（預設為當前時間）
-    @UpdateDateColumn({ type: 'timestamp', nullable: false })
+    @UpdateDateColumn({ type: 'timestamptz', nullable: false })
     updated_at!: Date;
 
     // 關聯至活動（多對一）

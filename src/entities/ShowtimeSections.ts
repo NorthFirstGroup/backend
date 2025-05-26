@@ -44,11 +44,11 @@ export class ShowtimeSectionsEntity {
     @Column({ type: 'integer', nullable: true })
     vacancy!: number | null; // 座位剩餘數量
 
-    @CreateDateColumn({ type: 'timestamp', nullable: false })
+    @CreateDateColumn({ type: 'timestamptz', nullable: false })
     @Index()
     created_at!: Date; // 資料創建時間，預設為當前時間
 
-    @UpdateDateColumn({ type: 'timestamp', nullable: false })
+    @UpdateDateColumn({ type: 'timestamptz', nullable: false })
     updated_at!: Date; // 資料更新時間，預設為當前時間
 
     // 與 Showtimes 的多對一關聯
