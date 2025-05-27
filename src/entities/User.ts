@@ -8,6 +8,8 @@ export enum UserRole {
     USER = 'USER',
     /** 活動廠商 */
     ORGANIZER = 'ORGANIZER',
+    /** 管理者 */
+    ADMIN = 'ADMIN',
 }
 
 /** 資料庫用的 Entity 名稱 */
