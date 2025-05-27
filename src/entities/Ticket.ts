@@ -18,8 +18,8 @@ import { DbEntity } from '../constants/dbEntity'
 @Index(['order_id'])
 export class TicketEntity {
     /** 票券id，主鍵 */
-    @PrimaryGeneratedColumn()
-    id!: number
+    @PrimaryGeneratedColumn('uuid')
+    id!: string
 
     /** 訂單id，關聯order表，禁止為空 */
     @Column({ type: 'integer', nullable: false })
@@ -42,8 +42,8 @@ export class TicketEntity {
     price!: number
 
     /** 票券代碼，禁止為空 */
-    @Column({ type: 'numeric', nullable: false })
-    ticket_code!: number
+    @Column({ type: 'varchar', nullable: false })
+    ticket_code!: string
 
     /** 使用狀態，預設為0，禁止為空 */
     @Column({ type: 'smallint', nullable: false, default: 0 })

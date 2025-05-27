@@ -6,6 +6,7 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     Index,
+    OneToOne,
     ManyToOne,
     JoinColumn,
     OneToMany,
@@ -13,21 +14,22 @@ import {
 import { OrderEntity } from './Order'
 import { TicketEntity } from './Ticket'
 import { DbEntity } from '../constants/dbEntity'
+import { ShowtimeSectionsEntity } from './ShowtimeSections'
 
 @Entity(DbEntity.OrderTicket)
 @Index(['created_at'])
 @Index(['order_id'])
 export class OrderTicketEntity {
     /** 訂單區域id，主鍵 */
-    @PrimaryGeneratedColumn()
-    id!: number
+    @PrimaryGeneratedColumn('uuid')
+    id!: string
 
     /** 訂單id，關聯order表，禁止為空 */
     @Column({ type: 'integer', nullable: false })
     order_id!: number
 
     /** 座位區域id，禁止為空 */
-    @Column({ type: 'varchar', nullable: false })
+    @Column({ type: 'uuid', nullable: false })
     section_id!: string
 
     /** 區域票券單價，禁止為空 */
@@ -62,6 +64,11 @@ export class OrderTicketEntity {
     @ManyToOne(() => OrderEntity, order => order.orderTickets)
     @JoinColumn({ name: 'order_id', referencedColumnName: 'id' })
     order!: OrderEntity
+
+    /** 座位區域關聯 */
+    @OneToOne(()=> ShowtimeSectionsEntity)
+    @JoinColumn({ name: 'section_id', referencedColumnName: 'id' })
+    section!: ShowtimeSectionsEntity
 
     /** 一張訂單有多張票券 */
     @OneToMany(() => TicketEntity, ticket => ticket.orderTicket)
