@@ -27,4 +27,6 @@ router.put('/profile', auth, userController.putProfile)
 router.put('/password', auth, userController.putPassword)
 router.post('/upload', auth, userController.postUpload)
 router.post('/order', auth, orderController.postCreateOrder)
+router.get('/order/:order_id', auth, orderController.getOrderDetail)
+router.get('/orders', auth, orderController.getUserOrders)
 export default router

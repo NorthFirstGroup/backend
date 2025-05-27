@@ -9,6 +9,10 @@ import { ActivityEntity } from '../entities/Activity';
 import { ShowtimesEntity } from '../entities/Showtimes';
 import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } from '../entities/Order';
 import { OrderTicketEntity } from '../entities/OrderTicket';
+import { ActivitySiteEntity } from '../entities/ActivitySite';
+import { OrganizerEntity } from '../entities/Organizer';
+import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
+import { UserEntity } from '../entities/User';
 
 import { seatInventoryService } from '../utils/seatInventory';
 
@@ -33,6 +37,7 @@ function generateOrderNumber(): string {
     return `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 }
 
+//建立訂單
 export async function postCreateOrder(req: JWTRequest, res: Response, next: NextFunction) {
     if (!seatInventoryService) {
         logger.error('SeatInventoryService 未初始化！');
@@ -228,5 +233,196 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 logger.error(`釋放 QueryRunner 失敗: ${releaseError instanceof Error ? releaseError.message : String(releaseError)}`);
             }
         }
+    }
+}
+
+//取得個人訂單詳細資訊
+export async function getOrderDetail(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id:userId } = getAuthUser(req)
+        const { order_id } = req.params
+
+        if (isNotValidInteger(order_id)) {
+            responseSend(initResponseData(res, 1000), logger);
+            return;
+        }
+        // 取得資料
+        const orderRepository = dataSource.getRepository(OrderEntity)
+
+        const order = await orderRepository.findOne({
+            where: { id: parseInt(order_id), user_id: userId },
+            relations: [
+                'showtime',
+                'showtime.activity',
+                'showtime.site',
+                'showtime.site.area',
+                'showtime.activity.organizer',
+                'orderTickets',
+                'tickets',
+                'user',
+            ],
+        })
+
+        if (!order) {
+            responseSend(initResponseData(res, 1620), logger);
+            return;
+        }
+
+        // Fetch contact information from the UserEntity
+        const user = await dataSource.getRepository(UserEntity).findOne({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            responseSend(initResponseData(res, 1621), logger);
+            return;
+        }
+
+        const seats = order.tickets.map(ticket => ({
+            status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used
+            seatNumber: ticket.section,
+            certificateUrl: ticket.certificate_url,
+        }))
+
+        const responseData = initResponseData(res, 2000)
+        responseData.data = {
+            orderId: order.order_number,
+            eventName: order.showtime.activity.name,
+            eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+            location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
+            organizer: order.showtime.activity.organizer.name,
+            ticketType: '電子票券', // As per OrderTicketEntity, ticket_type default is 1 (electronic ticket)
+            ticketCount: order.total_count,
+            totalPrice: parseFloat(order.total_price.toString()),
+            paymentMethod: order.payment_method === PaymentMethod.CREDIT_CARD ? '信用卡' : order.payment_method, // Mapping PaymentMethod enum to display string
+            seats: seats,
+            contact: {
+                name: user.nick_name,
+                phone: user.phone,
+                email: user.email,
+            },
+        },
+
+        responseSend(responseData)
+    } catch (error) {
+        logger.error('取得個人訂單詳細資訊錯誤', error)
+        next(error)
+    }
+}
+
+interface OrderListItem {
+    orderId: string;
+    eventName: string;
+    eventDate: string;
+    location: string;
+    organizer: string;
+    status: string;
+    ticketType: string;
+    ticketCount: number;
+    totalPrice: number;
+    coverImage: string;
+    seats: {
+        status: string;
+        seatNumber: string;
+        certificateUrl: string;
+    }[];
+}
+
+//取得個人訂單資訊列表
+export async function getUserOrders(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+
+        const { id: userId } = getAuthUser(req)
+        const page = parseInt(req.query.page as string) || 1;
+        const pageSize = parseInt(req.query.page_size as string) || 10;
+        const sortBy = (req.query.sort_by as string) || 'eventDate'; // 預設排序欄位
+        const order = (req.query.order as string) || 'desc'; // 預設排序順序，新時間排前面
+
+        if (isNotValidInteger(page) || isNotValidInteger(pageSize) || page < 1 || pageSize < 1 || pageSize > 10) {
+            responseSend(initResponseData(res, 1000), logger);
+            return;
+        }
+        //目前 api 設計並未輸入 sortBy, order
+        const allowedSortBy = ['eventDate', 'created_at', 'total_price']; // 允許排序的欄位
+        if (!allowedSortBy.includes(sortBy)) {
+            responseSend(initResponseData(res, 1622), logger);
+            return;
+        }
+
+        const allowedOrder = ['asc', 'desc'];
+        if (!allowedOrder.includes(order.toLowerCase())) {
+            responseSend(initResponseData(res, 1623), logger);
+            return;
+        }
+
+        const orderRepository = dataSource.getRepository(OrderEntity);
+
+        // 構建查詢
+        const queryBuilder = orderRepository.createQueryBuilder('order')
+            .leftJoinAndSelect('order.showtime', 'showtime') // 關聯場次
+            .leftJoinAndSelect('showtime.activity', 'activity') // 關聯活動
+            .leftJoinAndSelect('showtime.site', 'site') // 關聯場地
+            .leftJoinAndSelect('site.area', 'area') // 關聯區域
+            .leftJoinAndSelect('activity.organizer', 'organizer') // 關聯主辦方
+            .leftJoinAndSelect('order.tickets', 'ticket') // 關聯票券
+            .where('order.user_id = :userId', { userId }) // 過濾當前用戶的訂單
+            .orderBy(
+                sortBy === 'eventDate' ? 'showtime.start_time' : `order.${sortBy}`, // 根據 sortBy 判斷排序欄位
+                order.toUpperCase() as 'ASC' | 'DESC' // 確保是大寫 'ASC' 或 'DESC'
+            )
+            .skip((page - 1) * pageSize) // 跳過前幾頁的資料
+            .take(pageSize); // 取得當前頁的資料量
+
+        const [orders, total] = await queryBuilder.getManyAndCount();
+
+        const formattedOrders: OrderListItem[] = orders.map(order => {
+            const ticketType = '電子票券'; // 根據 OrderTicketEntity 的預設值 [cite: 65]
+            const paymentStatusMap: { [key in PaymentStatus]: string } = {
+                [PaymentStatus.PENDING]: '待付款',
+                [PaymentStatus.PAID]: '已付款',
+                [PaymentStatus.FAILED]: '支付失敗',
+                [PaymentStatus.REFUNDED]: '已退款',
+                [PaymentStatus.EXPIRED]: '支付超時',
+                [PaymentStatus.CANCELLED]: '支付取消',
+            };
+
+            const seats = order.tickets.map(ticket => ({
+                status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used [cite: 111]
+                seatNumber: ticket.section, // [cite: 110]
+                certificateUrl: ticket.certificate_url, // [cite: 111]
+            }));
+
+            return {
+                orderId: order.order_number,
+                eventName: order.showtime.activity.name,
+                eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+                location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
+                organizer: order.showtime.activity.organizer.name,
+                status: paymentStatusMap[order.payment_status],
+                ticketType: ticketType,
+                ticketCount: order.total_count,
+                totalPrice: parseFloat(order.total_price.toString()),
+                coverImage: order.showtime.activity.cover_image,
+                seats: seats,
+            };
+        });
+
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            sort_by: sortBy,
+            order: order,
+            results: formattedOrders,
+            pagination: {
+                total: total,
+                page: page,
+                limit: pageSize,
+            }
+        }
+
+        responseSend(responseData);
+
+    } catch (error) {
+        logger.error('取得個人訂單資訊列表錯誤', error)
+        next(error)
     }
 }
