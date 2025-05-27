@@ -9,6 +9,10 @@ import { ActivityEntity } from '../entities/Activity';
 import { ShowtimesEntity } from '../entities/Showtimes';
 import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } from '../entities/Order';
 import { OrderTicketEntity } from '../entities/OrderTicket';
+import { ActivitySiteEntity } from '../entities/ActivitySite';
+import { OrganizerEntity } from '../entities/Organizer';
+import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
+import { UserEntity } from '../entities/User';
 
 import { seatInventoryService } from '../utils/seatInventory';
 
@@ -33,6 +37,7 @@ function generateOrderNumber(): string {
     return `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 }
 
+//建立訂單
 export async function postCreateOrder(req: JWTRequest, res: Response, next: NextFunction) {
     if (!seatInventoryService) {
         logger.error('SeatInventoryService 未初始化！');
@@ -228,5 +233,74 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 logger.error(`釋放 QueryRunner 失敗: ${releaseError instanceof Error ? releaseError.message : String(releaseError)}`);
             }
         }
+    }
+}
+
+//取得個人訂單詳細資訊
+export async function getOrderDetail(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id:userId } = getAuthUser(req)
+        const { order_id } = req.params
+        // 取得資料
+        const orderRepository = dataSource.getRepository(OrderEntity)
+
+        const order = await orderRepository.findOne({
+            where: { id: parseInt(order_id), user_id: userId },
+            relations: [
+                'showtime',
+                'showtime.activity',
+                'showtime.site',
+                'showtime.site.area',
+                'showtime.activity.organizer',
+                'orderTickets',
+                'tickets',
+                'user',
+            ],
+        })
+
+        if (!order) {
+            responseSend(initResponseData(res, 1620), logger);
+            return;
+        }
+
+        // Fetch contact information from the UserEntity
+        const user = await dataSource.getRepository(UserEntity).findOne({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            responseSend(initResponseData(res, 1621), logger);
+            return;
+        }
+
+        const seats = order.tickets.map(ticket => ({
+            status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used
+            seatNumber: ticket.section,
+            certificateUrl: ticket.certificate_url,
+        }))
+
+        const responseData = initResponseData(res, 2000)
+        responseData.data = {
+            orderId: order.order_number,
+            eventName: order.showtime.activity.name,
+            eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+            location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
+            organizer: order.showtime.activity.organizer.name,
+            ticketType: '電子票券', // As per OrderTicketEntity, ticket_type default is 1 (electronic ticket)
+            ticketCount: order.total_count,
+            totalPrice: parseFloat(order.total_price.toString()),
+            paymentMethod: order.payment_method === PaymentMethod.CREDIT_CARD ? '信用卡' : order.payment_method, // Mapping PaymentMethod enum to display string
+            seats: seats,
+            contact: {
+                name: user.nick_name,
+                phone: user.phone,
+                email: user.email,
+            },
+        }
+
+        responseSend(responseData)
+    } catch (error) {
+        logger.error('取得個人訂單詳細資訊錯誤', error)
+        next(error)
     }
 }
