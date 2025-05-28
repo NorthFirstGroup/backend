@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { Request as JWTRequest } from 'express-jwt'
 import { dataSource } from '../db/data-source'
-import { isNotValidInteger } from '../utils/validation';
+import { isNotValidInteger, isNotValidUuid } from '../utils/validation';
 import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
 import { getAuthUser } from '../middlewares/auth'
@@ -9,10 +9,11 @@ import { ActivityEntity } from '../entities/Activity';
 import { ShowtimesEntity } from '../entities/Showtimes';
 import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } from '../entities/Order';
 import { OrderTicketEntity } from '../entities/OrderTicket';
-import { ActivitySiteEntity } from '../entities/ActivitySite';
-import { OrganizerEntity } from '../entities/Organizer';
-import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
+// import { ActivitySiteEntity } from '../entities/ActivitySite';
+// import { OrganizerEntity } from '../entities/Organizer';
+// import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { UserEntity } from '../entities/User';
+import { TicketEntity } from '../entities/Ticket';
 
 import { seatInventoryService } from '../utils/seatInventory';
 
@@ -174,11 +175,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             orderTicket.section_id = ticket.zone;
             orderTicket.price = ticket.price;
             orderTicket.quantity = ticket.quantity;
-            orderTicket.ticket_type = 1;
+            orderTicket.ticket_type = 1;// 預設電子票券
             return orderTicket;
         });
 
-        await orderTicketRepository.save(orderTicketsToSave);
+        await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
 
         // 如果所有資料庫操作都成功，提交事務(原子操作)
         await queryRunner.commitTransaction();
@@ -424,5 +425,83 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
     } catch (error) {
         logger.error('取得個人訂單資訊列表錯誤', error)
         next(error)
+    }
+}
+
+//取得票券詳細資訊
+export async function getTicketDetail(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const { ticket_id } = req.params;
+
+        if (isNotValidUuid(ticket_id)) {
+            responseSend(initResponseData(res, 1000), logger);
+            return;
+        }
+
+        const ticketRepository = dataSource.getRepository(TicketEntity);
+
+        const ticket = await ticketRepository.findOne({
+            where: {
+                id: ticket_id,
+                order: {
+                    user_id: userId
+                }
+            },
+            relations: [
+                'order',
+                'order.showtime',
+                'order.showtime.activity',
+                'order.showtime.site',
+                'order.showtime.activity.organizer',
+                'orderTicket'
+            ],
+        });
+
+        if (!ticket) {
+            responseSend(initResponseData(res, 1624), logger);
+            return;
+        }
+
+        const ticketStatusMap: { [key: number]: string } = {
+            0: '未使用',
+            1: '已使用',
+            2: '已失效', // 假設 2 代表失效
+        };
+        const ticketStatus = ticketStatusMap[ticket.status] || '未知狀態';
+
+        // 票券類型轉換 (根據 OrderTicketEntity 中的 ticket_type 欄位)
+        const ticketTypeMap: { [key: number]: string } = {
+            1: '電子票券',
+            2: '實體票券', // 假設 2 代表實體票券
+        };
+        const ticketType = ticketTypeMap[ticket.orderTicket.ticket_type] || '未知類型';
+
+        const formattedTicketDetail = {
+            ticket_code: ticket.ticket_code,
+            eventName: ticket.order.showtime.activity.name,
+            eventDate: new Date(ticket.order.showtime.start_time).toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false, // 24小時制
+            }).replace(/\//g, '/'), // 格式化為 "YYYY/MM/DD HH:MM"
+            location: `${ticket.order.showtime.site.name} / ${ticket.order.showtime.site.address}`,
+            organizer: ticket.order.showtime.activity.organizer.name,
+            status: ticketStatus,
+            ticketType: ticketType,
+            seats: ticket.section,
+        };
+
+        const responseData = initResponseData(res, 2000);
+        responseData.data = formattedTicketDetail;
+
+        responseSend(responseData);
+
+    } catch (error) {
+        logger.error(`取得票券詳細資訊錯誤`, error);
+        next(error);
     }
 }
