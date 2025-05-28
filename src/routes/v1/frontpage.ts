@@ -12,7 +12,8 @@ const router = Router()
 const logger = getLogger('Frontpage')
 
 // 設定驗證 middleware
-const auth = createAuthMiddleware({
+// TODO: change '_auth' to 'auth' if it is used
+const _auth = createAuthMiddleware({
     secret: config.get('secret.jwtSecret'),
     userRepository: dataSource.getRepository(dbEntityNameUser),
     logger,

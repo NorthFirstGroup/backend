@@ -38,7 +38,7 @@ export async function postUploadImage(req: JWTRequest, res: Response, next: Next
             }
         })
 
-        const [fields, files] = await form.parse(req)
+        const [_fields, files] = await form.parse(req)
         const rawFile = files.file
         const file: formidable.File | undefined = Array.isArray(rawFile) ? rawFile[0] : rawFile;
         if (!file || !file.filepath) {
