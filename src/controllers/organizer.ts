@@ -1,9 +1,12 @@
 import { Response, NextFunction } from 'express'
 import { Request as JWTRequest } from 'express-jwt'
+import { dataSource } from '../db/data-source'
+import { getAuthUser } from '../middlewares/auth'
 import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
 import formidable from 'formidable'
 import { uploadPublicImage } from '../utils/uploadFile'
+import { ActivityEntity } from '../entities/Activity'
 
 const logger = getLogger('Organizer')
 
@@ -21,6 +24,55 @@ export async function postApply(req: JWTRequest, res: Response, next: NextFuncti
         responseSend(initResponseData(res, 2000))
     } catch (error) {
         logger.error('postApply 錯誤:', error)
+        next(error)
+    }
+}
+
+export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const name = req.query.name;
+        const categoryId = parseInt(req.query.category as string) || null;
+        const status = parseInt(req.query.status as string) || null;
+        const offset = parseInt(req.query.offset as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const qb = dataSource
+            .getRepository(ActivityEntity)
+            .createQueryBuilder('activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .leftJoinAndSelect('activity.category', 'category')
+            .leftJoinAndSelect('activity.sites', 'sites')
+            .where('organizer.user_id = :userId', { userId })
+            .andWhere('activity.is_deleted = false');
+
+        qb.orderBy('activity.created_at', 'DESC');
+
+        // Optional filters
+        if (name) {
+            qb.andWhere('activity.name ILIKE :name', { name: `%${name}%` });
+        }
+
+        if (typeof status === 'number') {
+            qb.andWhere('activity.status = :status', { status });
+        }
+
+        if (categoryId) {
+            qb.andWhere('activity.category_id = :categoryId', { categoryId });
+        }
+
+        // Pagination
+        qb.skip(offset).take(limit);
+
+        const [activities, total_count] = await qb.getManyAndCount();
+        console.log(activities);
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            total_count: total_count,
+            results: activities
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error(`取得廠商活動錯誤：${error}`)
         next(error)
     }
 }

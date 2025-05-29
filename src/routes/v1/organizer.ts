@@ -20,6 +20,7 @@ const auth = createAuthMiddleware({
 })
 
 // 路由定義
+router.get('/activity', auth, isOrganizer, organizerController.getActivity)
 router.post('/apply', auth, isOrganizer, organizerController.postApply)
 router.post('/upload/image', auth, isOrganizer, organizerController.postUploadImage)
 
