@@ -64,7 +64,6 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
         qb.skip(offset).take(limit);
 
         const [activities, total_count] = await qb.getManyAndCount();
-        console.log(activities);
         const responseData = initResponseData(res, 2000);
         responseData.data = {
             total_count: total_count,
