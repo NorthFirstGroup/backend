@@ -302,7 +302,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
                 phone: user.phone,
                 email: user.email,
             },
-        },
+        }
 
         responseSend(responseData)
     } catch (error) {

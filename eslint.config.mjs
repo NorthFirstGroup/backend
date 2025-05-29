@@ -18,6 +18,16 @@ export default defineConfig([
                 ...globals.browser, // --> 提供 node 和 Browser 等全域變數使用(例: window, document)
             },
         },
+        rules: {
+            'no-unused-vars': 'off', // 關掉原生 JS 的 unused-vars, 改用 TS 的版本
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_'
+                }
+            ]
+        }
     },
 
     // JS 檔案使用 CommonJS 模式

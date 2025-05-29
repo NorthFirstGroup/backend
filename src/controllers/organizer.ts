@@ -1,13 +1,16 @@
 import { Response, NextFunction } from 'express'
 import { Request as JWTRequest } from 'express-jwt'
+import { dataSource } from '../db/data-source'
+import { getAuthUser } from '../middlewares/auth'
 import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
 import formidable from 'formidable'
 import { uploadPublicImage } from '../utils/uploadFile'
+import { ActivityEntity } from '../entities/Activity'
 
 const logger = getLogger('Organizer')
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_MIME_TYPES = {
     'image/jpeg': true,
     'image/png': true,
@@ -25,6 +28,90 @@ export async function postApply(req: JWTRequest, res: Response, next: NextFuncti
     }
 }
 
+export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const name = req.query.name;
+        const categoryId = parseInt(req.query.category as string) || null;
+        const status = parseInt(req.query.status as string) || null;
+        const offset = parseInt(req.query.offset as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const qb = dataSource
+            .getRepository(ActivityEntity)
+            .createQueryBuilder('activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .leftJoinAndSelect('activity.category', 'category')
+            .leftJoinAndSelect('activity.sites', 'sites')
+            .where('organizer.user_id = :userId', { userId })
+            .andWhere('activity.is_deleted = false');
+
+        qb.orderBy('activity.created_at', 'DESC');
+
+        // Optional filters
+        if (name) {
+            qb.andWhere('activity.name ILIKE :name', { name: `%${name}%` });
+        }
+
+        if (typeof status === 'number') {
+            qb.andWhere('activity.status = :status', { status });
+        }
+
+        if (categoryId) {
+            qb.andWhere('activity.category_id = :categoryId', { categoryId });
+        }
+
+        // Pagination
+        qb.skip(offset).take(limit);
+
+        const [activities, total_count] = await qb.getManyAndCount();
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            total_count: total_count,
+            results: activities
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error(`取得廠商活動錯誤：${error}`)
+        next(error)
+    }
+}
+
+export async function getActivityById(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const activityId = parseInt(req.params.activity_id as string) || null;
+
+        console.log(`activityId: ${activityId}`);
+        if (!activityId) {
+            responseSend(initResponseData(res, 1000), logger)
+            return
+        }
+
+        const qb = dataSource
+            .getRepository(ActivityEntity)
+            .createQueryBuilder('activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .where('organizer.user_id = :userId', { userId })
+            .andWhere('activity.id = :activityId', { activityId })
+            .andWhere('activity.is_deleted = false');
+
+
+        const activity = await qb.getOne();
+        if (!activity) {
+            return responseSend(initResponseData(res, 1018), logger);
+        }
+
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            ...activity
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error(`取得廠商單一活動錯誤：${error}`)
+        next(error)
+    }
+}
+
 /** 上傳圖片 */
 export async function postUploadImage(req: JWTRequest, res: Response, next: NextFunction) {
     try {
@@ -38,7 +125,7 @@ export async function postUploadImage(req: JWTRequest, res: Response, next: Next
             }
         })
 
-        const [fields, files] = await form.parse(req)
+        const [_fields, files] = await form.parse(req)
         const rawFile = files.file
         const file: formidable.File | undefined = Array.isArray(rawFile) ? rawFile[0] : rawFile;
         if (!file || !file.filepath) {
