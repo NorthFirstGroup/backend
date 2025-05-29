@@ -1,4 +1,5 @@
 import { organizerIds } from './dataUsers'
+import { ActivityStatus } from "../enums/activity"
 
 export const activityIds = [
     1,
@@ -52,7 +53,7 @@ export const activities = [
         name: '憂鬱，不只是藍色',
         organizer_id: organizerIds[0],
         category_id: 1,
-        status: 2,
+        status: ActivityStatus.Published,
         description: '這是一個測試活動',
         information: '活動資訊',
         start_time: '2025-07-01 12:00+08',
@@ -67,7 +68,7 @@ export const activities = [
         name: '伍百 & China Blue 世界巡迴演唱會',
         organizer_id: organizerIds[1],
         category_id: 9,
-        status: 2,
+        status: ActivityStatus.Published,
         description: '這是一個測試活動',
         information: '活動資訊',
         start_time: '2025-07-01 12:00+08',
@@ -82,7 +83,7 @@ export const activities = [
         name: '老派趴踢 Night Old Style Party Night with TJO',
         organizer_id: organizerIds[1],
         category_id: 9,
-        status: 2,
+        status: ActivityStatus.Published,
         description: '這是一個測試活動',
         information: '活動資訊',
         start_time: '2025-07-01 12:00+08',
