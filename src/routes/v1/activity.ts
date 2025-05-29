@@ -21,6 +21,7 @@ const _auth = createAuthMiddleware({
 
 // 路由定義
 router.get('/recommend', activityController.getRecommend)
+router.get('/search', activityController.search)
 
 //動態參數放最後
 router.get('/:activity_id', activityController.getActivity)

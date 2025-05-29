@@ -45,8 +45,6 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
             .where('organizer.user_id = :userId', { userId })
             .andWhere('activity.is_deleted = false');
 
-        qb.orderBy('activity.created_at', 'DESC');
-
         // Optional filters
         if (name) {
             qb.andWhere('activity.name ILIKE :name', { name: `%${name}%` });
@@ -59,6 +57,8 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
         if (categoryId) {
             qb.andWhere('activity.category_id = :categoryId', { categoryId });
         }
+
+        qb.orderBy('activity.created_at', 'DESC');
 
         // Pagination
         qb.skip(offset).take(limit);
