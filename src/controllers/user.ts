@@ -4,6 +4,7 @@ import config from '../config'
 import jwt from 'jsonwebtoken'
 import { Request as JWTRequest } from 'express-jwt'
 import { dataSource } from '../db/data-source'
+import { DbEntity } from '../constants/dbEntity';
 import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
 import { isNotValidString, isNotValidPassword, isNotValidUserName, isNotValidEmail, isNotValidPhoneNumber, isNotValidBirthday, isNotValidUrl } from '../utils/validation'
@@ -353,6 +354,30 @@ export async function postUpload(req: JWTRequest, res: Response, next: NextFunct
         responseSend(initResponseData(res, 2000, { url }))
     } catch (error) {
         logger.error('上傳圖片錯誤:', error)
+        next(error)
+    }
+}
+
+export async function applyAsOrganizer(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id } = getAuthUser(req);
+        const organizerRepository = dataSource.getRepository(DbEntity.Organizer);
+        const existingOrganizer = await organizerRepository.findOne({ where: { user_id: id } });
+        if (existingOrganizer) {
+            responseSend(initResponseData(res, 1020), logger)
+            return
+        }
+
+        const newOrganizer = organizerRepository.create({
+            user_id: id,
+            status: 1,  // 目前預設直接審核通過
+            ...req.body
+        });
+        organizerRepository.save(newOrganizer);
+
+        responseSend(initResponseData(res, 2000))
+    } catch (error) {
+        logger.error('申請成為廠商錯誤:', error)
         next(error)
     }
 }

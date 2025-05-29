@@ -18,16 +18,6 @@ const ALLOWED_MIME_TYPES = {
 } as const;
 type AllowedMimeTypes = keyof typeof ALLOWED_MIME_TYPES;
 
-export async function postApply(req: JWTRequest, res: Response, next: NextFunction) {
-    try {
-
-        responseSend(initResponseData(res, 2000))
-    } catch (error) {
-        logger.error('postApply 錯誤:', error)
-        next(error)
-    }
-}
-
 export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id: userId } = getAuthUser(req);
