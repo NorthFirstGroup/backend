@@ -9,7 +9,7 @@ import responseSend, { initResponseData } from '../utils/serverResponse'
 import { isNotValidPassword, isNotValidEmail } from '../utils/validation'
 import generateJWT from '../utils/generateJWT'
 import { dbEntityNameUser } from '../entities/User'
-import sendEmail from '../utils/sendEmail'
+// import sendEmail from '../utils/sendEmail'
 import { getAuthUser } from '../middlewares/auth'
 
 const saltRounds = 10

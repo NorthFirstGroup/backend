@@ -19,7 +19,7 @@ import path from 'path'
 const saltRounds = 10
 const logger = getLogger('User')
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_MIME_TYPES = {
     'image/jpeg': true,
     'image/png': true,

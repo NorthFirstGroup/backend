@@ -143,7 +143,7 @@ export async function getShowtime(req: JWTRequest, res: Response, next: NextFunc
             location: showtime.site.name,
             address: showtime.site.address,
             seat_image: showtime.seat_image,
-            seats: showtime.showtimeSections.map((section: any) => ({
+            seats: showtime.showtimeSections.map((section: ShowtimeSectionsEntity) => ({
                 id: section.id,
                 section: section.section,
                 price: section.price,

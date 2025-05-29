@@ -9,9 +9,9 @@ import { ActivityEntity } from '../entities/Activity';
 import { ShowtimesEntity } from '../entities/Showtimes';
 import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } from '../entities/Order';
 import { OrderTicketEntity } from '../entities/OrderTicket';
-import { ActivitySiteEntity } from '../entities/ActivitySite';
-import { OrganizerEntity } from '../entities/Organizer';
-import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
+// import { ActivitySiteEntity } from '../entities/ActivitySite';
+// import { OrganizerEntity } from '../entities/Organizer';
+// import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { UserEntity } from '../entities/User';
 
 import { seatInventoryService } from '../utils/seatInventory';
@@ -301,7 +301,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
                 phone: user.phone,
                 email: user.email,
             },
-        },
+        }
 
         responseSend(responseData)
     } catch (error) {

@@ -36,7 +36,6 @@ export async function uploadPublicImage(file: formidable.File) {
         const fileStream = fs.createReadStream(file.filepath)
         const fileExt = path.extname(file.originalFilename || '')
         const key = `public/images/${uuidv4()}${fileExt}` // S3 上的檔案路徑
-        console.log('key:', key)
         const uploadParams = {
             Bucket: bucketName,
             Key: key,
@@ -58,7 +57,6 @@ export async function uploadUserAvatar(file: formidable.File, userId: string) {
         const fileStream = fs.createReadStream(file.filepath)
         const fileExt = path.extname(file.originalFilename || '')
         const key = `user/${userId}/avatar${fileExt}` // S3 上的檔案路徑
-        console.log('key:', key)
         const uploadParams = {
             Bucket: bucketName,
             Key: key,
