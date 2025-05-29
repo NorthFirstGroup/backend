@@ -76,6 +76,42 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
     }
 }
 
+export async function getActivityById(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const activityId = parseInt(req.params.activity_id as string) || null;
+
+        console.log(`activityId: ${activityId}`);
+        if (!activityId) {
+            responseSend(initResponseData(res, 1000), logger)
+            return
+        }
+
+        const qb = dataSource
+            .getRepository(ActivityEntity)
+            .createQueryBuilder('activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .where('organizer.user_id = :userId', { userId })
+            .andWhere('activity.id = :activityId', { activityId })
+            .andWhere('activity.is_deleted = false');
+
+
+        const activity = await qb.getOne();
+        if (!activity) {
+            return responseSend(initResponseData(res, 1018), logger);
+        }
+
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            ...activity
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error(`取得廠商單一活動錯誤：${error}`)
+        next(error)
+    }
+}
+
 /** 上傳圖片 */
 export async function postUploadImage(req: JWTRequest, res: Response, next: NextFunction) {
     try {
