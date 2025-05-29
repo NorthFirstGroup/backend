@@ -20,6 +20,7 @@ const _auth = createAuthMiddleware({
 })
 
 // 路由定義
+router.get('/category', activityController.getCategory)
 router.get('/recommend', activityController.getRecommend)
 router.get('/search', activityController.search)
 

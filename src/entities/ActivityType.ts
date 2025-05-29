@@ -18,6 +18,10 @@ export class ActivityTypeEntity {
   @Column({ type: 'varchar', length: 20, nullable: false, unique: true})
   name!: string;
 
+  /** 類別圖示 */
+  @Column({ type: 'text', nullable: false })
+  media!: string;
+
   /** 啟用狀態 */
   @Column({ type: 'boolean', default: true, nullable: false })
   is_active!: boolean;

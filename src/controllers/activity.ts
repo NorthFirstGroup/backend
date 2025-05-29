@@ -4,11 +4,32 @@ import getLogger from '../utils/logger';
 import responseSend, { initResponseData } from '../utils/serverResponse';
 import { DbEntity } from '../constants/dbEntity';
 import { ActivityEntity } from '../entities/Activity'
+import { ActivityTypeEntity } from '../entities/ActivityType'
 import { dataSource } from '../db/data-source';
 import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { ActivityStatus } from '../enums/activity';
 
 const logger = getLogger('Activity');
+
+export async function getCategory(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const qb = dataSource
+            .getRepository(ActivityTypeEntity)
+            .createQueryBuilder('category')
+            .orderBy('category.id', 'ASC');
+
+        const [results, total_count] = await qb.getManyAndCount();
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            total_count: total_count,
+            results: results
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error('getActivity 錯誤', error);
+        next(error);
+    }
+}
 
 export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
     try {
