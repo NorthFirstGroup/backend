@@ -11,7 +11,7 @@ import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } f
 import { OrderTicketEntity } from '../entities/OrderTicket';
 // import { ActivitySiteEntity } from '../entities/ActivitySite';
 // import { OrganizerEntity } from '../entities/Organizer';
-// import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
+import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { UserEntity } from '../entities/User';
 import { TicketEntity } from '../entities/Ticket';
 
@@ -34,8 +34,86 @@ interface OrderRequestBody {
 }
 
 // 基於時間產生的訂單編號
-function generateOrderNumber(): string {
-    return `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+async function getMaxSequenceForDay(yearMonth: string): Promise<number> {
+    // 從 order_number 中提取流水號部分，並轉換為數字
+    const orderRepository = dataSource.getRepository(OrderEntity)
+    const result = await orderRepository
+        .createQueryBuilder('order')
+        .select("MAX(CAST(SUBSTRING(order.order_number FROM 9 FOR 5) AS INTEGER))", "maxSequence") // Adjusted substring for YYYYMMDDSSSSS
+        // .where("order.order_number LIKE :prefix", { prefix: `${yearMonthDay}%` })
+        .getRawOne();
+
+    return result?.maxSequence || 0;
+}
+
+//訂單編號： YYYYMMDDSSSSSS
+async function generateOrderNumber(): Promise<string> {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const yearMonthDay  = `${year}${month}${day}`
+
+    const maxSequence = await getMaxSequenceForDay(yearMonthDay);
+    let paddedSequence = (maxSequence + 1).toString().padStart(5, '0');
+
+    return `${yearMonthDay}${paddedSequence}`;
+}
+
+function validateOrderNumber(orderNumber: string): boolean {
+    // 1. Check if the string starts with 'ORD-'
+    if (!orderNumber.startsWith('ORD-')) {
+        return false;
+    }
+
+    // 2. Split the string into parts
+    const parts = orderNumber.split('-');
+    if (parts.length !== 3) {
+        return false; // Expected 3 parts: 'ORD', YYYYMM, SSSSSS
+    }
+
+    const yearMonthPart = parts[1];
+    const sequentialNumberPart = parts[2];
+
+    // 3. Validate the yearMonthPart part (middle part)
+    if (!/^\d{6}$/.test(yearMonthPart)) {
+        return false; // 必須是 6 位數字
+    }
+
+    const year = parseInt(yearMonthPart.substring(0, 4), 10);
+    const month = parseInt(yearMonthPart.substring(4, 6), 10);
+
+    // 基本月份驗證 (1-12)
+    if (month < 1 || month > 12) {
+        return false;
+    }
+
+    // 將訂單編號中的年月轉換為 Date 物件，用於時間範圍驗證
+    // 我們使用該月的第一天進行比較
+    const orderMonthDate = new Date(year, month - 1, 1); // 月份在 Date 建構函數中是 0-indexed
+
+    // 獲取當前日期，並計算時間邊界 (3 個月前到 6 個月後)
+    const now = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    threeMonthsAgo.setDate(1); // 設定為該月的第一天
+
+    const sixMonthsLater = new Date();
+    sixMonthsLater.setMonth(now.getMonth() + 6);
+    sixMonthsLater.setDate(1); // 設定為該月的第一天
+
+    // 檢查訂單編號的月份是否在有效範圍內
+    // 我們只比較月份，不考慮具體日期和時間
+    if (orderMonthDate < threeMonthsAgo || orderMonthDate > sixMonthsLater) {
+        return false; // 訂單日期超出有效時間範圍
+    }
+
+     // 4. 驗證流水號部分 (6 位數字)
+    if (!/^\d{6}$/.test(sequentialNumberPart)) {
+        return false; // 必須是 6 位數字
+    }
+
+    return true; // All checks passed
 }
 
 //建立訂單
@@ -120,6 +198,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const showtimeSections = showtime.showtimeSections;
         let totalTicketsQuantity = 0; // 用於計算 total_count
         let totalPriceAmount = 0; // 用於計算 total_price
+        const orderTicketsDetails: { sectionId: string; price: number; quantity: number; }[] = []; // To store sectionId for OrderTicketEntity
 
         for (const requestedTicket of tickets) {
             const sectionDetail = showtimeSections.find(section => section.section === requestedTicket.zone);
@@ -145,11 +224,19 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 responseSend(initResponseData(res, 1609), logger);
                 return;
             }
+
             // 記錄成功預扣的票券
             successfullyDeductedTickets.push({ zone: requestedTicket.zone, quantity: requestedTicket.quantity });
 
             totalTicketsQuantity += requestedTicket.quantity;
             totalPriceAmount += requestedTicket.price * requestedTicket.quantity;
+
+            // Store the section's ID for creating OrderTicketEntity
+            orderTicketsDetails.push({
+                sectionId: sectionDetail.id, // Use the ID of the ShowtimeSectionEntity
+                price: requestedTicket.price,
+                quantity: requestedTicket.quantity,
+            });
         }
 
         // 5. 建立訂單
@@ -159,7 +246,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const newOrder = new OrderEntity();
         newOrder.user_id = id;
         newOrder.showtime_id = showtimeId;
-        newOrder.order_number = generateOrderNumber();
+        newOrder.order_number = await generateOrderNumber();
         newOrder.status = OrderStatus.PROCESSING;
         newOrder.total_count = totalTicketsQuantity;
         newOrder.total_price = totalPriceAmount;
@@ -169,15 +256,17 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
 
         const savedOrder = await orderRepository.save(newOrder);
 
-        const orderTicketsToSave: OrderTicketEntity[] = tickets.map(ticket => {
+        const orderTicketsToSave: OrderTicketEntity[] = orderTicketsDetails.map(detail  => {
             const orderTicket = new OrderTicketEntity();
             orderTicket.order_id = savedOrder.id;
-            orderTicket.section_id = ticket.zone;
-            orderTicket.price = ticket.price;
-            orderTicket.quantity = ticket.quantity;
+            orderTicket.section_id = detail.sectionId;
+            orderTicket.price = detail.price;
+            orderTicket.quantity = detail.quantity;
             orderTicket.ticket_type = 1;// 預設電子票券
             return orderTicket;
         });
+
+        // console.log(JSON.stringify(orderTicketsToSave));
 
         await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
 
@@ -185,12 +274,8 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         await queryRunner.commitTransaction();
 
         // 訂單建立成功
-        responseSend(initResponseData(res, 200, {
-            message: '訂單成立',
-            status: true,
-            data: {
-                order_id: savedOrder.order_number
-            }
+        responseSend(initResponseData(res, 2000, {
+            order_id: savedOrder.order_number
         }), logger);
 
     } catch (error) {
@@ -218,12 +303,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             }
         }
 
-        responseSend(initResponseData(res, 400, {
-            message: '訂單失敗',
-            status: false,
+        responseSend(initResponseData(res, 1610, {
             data: {}
         }), logger);
 
+        logger.error('建立訂單失敗', error)
         next(error);
     } finally {
         if (queryRunner) {
@@ -243,7 +327,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
         const { id:userId } = getAuthUser(req)
         const { order_id } = req.params
 
-        if (isNotValidInteger(order_id)) {
+        if (typeof order_id !== 'string' || order_id.length === 0) {
             responseSend(initResponseData(res, 1000), logger);
             return;
         }
@@ -287,7 +371,8 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
 
         const responseData = initResponseData(res, 2000)
         responseData.data = {
-            orderId: order.order_number,
+            orderId: order_id,
+            orderNumber: order.order_number,
             eventName: order.showtime.activity.name,
             eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
             location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
@@ -312,7 +397,8 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
 }
 
 interface OrderListItem {
-    orderId: string;
+    orderId: number;
+    orderNumber: string;
     eventName: string;
     eventDate: string;
     location: string;
@@ -339,6 +425,7 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
         const sortBy = (req.query.sort_by as string) || 'eventDate'; // 預設排序欄位
         const order = (req.query.order as string) || 'desc'; // 預設排序順序，新時間排前面
 
+        //fix later: 考慮改用時間來限制，如最舊時間為 3 個月前
         if (isNotValidInteger(page) || isNotValidInteger(pageSize) || page < 1 || pageSize < 1 || pageSize > 10) {
             responseSend(initResponseData(res, 1000), logger);
             return;
@@ -394,7 +481,8 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
             }));
 
             return {
-                orderId: order.order_number,
+                orderId: order.id,
+                orderNumber: order.order_number,
                 eventName: order.showtime.activity.name,
                 eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                 location: `${order.showtime.site.name} / ${order.showtime.site.address}`,

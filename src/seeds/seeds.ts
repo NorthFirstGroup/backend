@@ -1,5 +1,5 @@
 import { DbEntity } from '../constants/dbEntity';
-import { resetTable, seedTable } from './seedUtil';
+import { resetTable, seedTable, runSeedRedisScript } from './seedUtil';
 import { areas, categories } from './dataCommon';
 import { getSeedUsers, organizers } from './dataUsers';
 import { activities, activitySites, showtimes, showtimeSections } from './dataActivities';
@@ -32,6 +32,8 @@ async function seed() {
     await seedTable(DbEntity.Order, orders);
     await seedTable(DbEntity.OrderTicket, orderTickets);
     await seedTable(DbEntity.Ticket, tickets);
+
+    runSeedRedisScript();
 }
 
 (async () => {
