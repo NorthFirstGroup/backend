@@ -11,7 +11,7 @@ export const DbEntity = {
   Order: 'Order',
   OrderTicket: 'OrderTicket',
   Ticket: 'Ticket',
-  
+  DailySequence: 'DailySequences',
   
   // other tables...
 };

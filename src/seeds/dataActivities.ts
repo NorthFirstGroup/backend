@@ -88,7 +88,7 @@ export const activities = [
         information: '活動資訊',
         start_time: '2025-07-01 12:00+08',
         end_time: '2025-07-05 12:00+08',
-        sales_start_time: '2025-06-01 12:00+08',
+        sales_start_time: '2025-05-01 12:00+08',
         sales_end_time: '2025-07-05 12:00+08',
         cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
         banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',

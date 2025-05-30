@@ -14,6 +14,7 @@ import { OrderTicketEntity } from '../entities/OrderTicket';
 import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { UserEntity } from '../entities/User';
 import { TicketEntity } from '../entities/Ticket';
+import { DailySequenceEntity } from '../entities/DailySequence';
 
 import { seatInventoryService } from '../utils/seatInventory';
 
@@ -33,85 +34,45 @@ interface OrderRequestBody {
     tickets: TicketInput[];
 }
 
-// 基於時間產生的訂單編號
-async function getMaxSequenceForDay(yearMonth: string): Promise<number> {
-    // 從 order_number 中提取流水號部分，並轉換為數字
-    const orderRepository = dataSource.getRepository(OrderEntity)
-    const result = await orderRepository
-        .createQueryBuilder('order')
-        .select("MAX(CAST(SUBSTRING(order.order_number FROM 9 FOR 5) AS INTEGER))", "maxSequence") // Adjusted substring for YYYYMMDDSSSSS
-        // .where("order.order_number LIKE :prefix", { prefix: `${yearMonthDay}%` })
-        .getRawOne();
+function _validateOrderNumber(orderNumber: string): boolean {
+    // 1. Check total length and format
+    if (!/^\d{13}$/.test(orderNumber)) { // YYYYMMDD (8 digits) + SSSSS (5 digits) = 13 digits
+        return false; // 必須是 13 位數字
+    }
 
-    return result?.maxSequence || 0;
-}
+    const datePart = orderNumber.substring(0, 8); // YYYYMMDD
+    const sequentialNumberPart = orderNumber.substring(8, 13); // SSSSS
 
-//訂單編號： YYYYMMDDSSSSSS
-async function generateOrderNumber(): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const yearMonthDay  = `${year}${month}${day}`
+    const year = parseInt(datePart.substring(0, 4), 10);
+    const month = parseInt(datePart.substring(4, 6), 10);
+    const day = parseInt(datePart.substring(6, 8), 10);
 
-    const maxSequence = await getMaxSequenceForDay(yearMonthDay);
-    let paddedSequence = (maxSequence + 1).toString().padStart(5, '0');
-
-    return `${yearMonthDay}${paddedSequence}`;
-}
-
-function validateOrderNumber(orderNumber: string): boolean {
-    // 1. Check if the string starts with 'ORD-'
-    if (!orderNumber.startsWith('ORD-')) {
+    // 基本日期驗證 (month 1-12, day based on month)
+    if (month < 1 || month > 12 || day < 1 || day > 31) { // Basic check, more robust date validation can be added
         return false;
     }
-
-    // 2. Split the string into parts
-    const parts = orderNumber.split('-');
-    if (parts.length !== 3) {
-        return false; // Expected 3 parts: 'ORD', YYYYMM, SSSSSS
-    }
-
-    const yearMonthPart = parts[1];
-    const sequentialNumberPart = parts[2];
-
-    // 3. Validate the yearMonthPart part (middle part)
-    if (!/^\d{6}$/.test(yearMonthPart)) {
-        return false; // 必須是 6 位數字
-    }
-
-    const year = parseInt(yearMonthPart.substring(0, 4), 10);
-    const month = parseInt(yearMonthPart.substring(4, 6), 10);
-
-    // 基本月份驗證 (1-12)
-    if (month < 1 || month > 12) {
-        return false;
-    }
-
-    // 將訂單編號中的年月轉換為 Date 物件，用於時間範圍驗證
-    // 我們使用該月的第一天進行比較
-    const orderMonthDate = new Date(year, month - 1, 1); // 月份在 Date 建構函數中是 0-indexed
 
     // 獲取當前日期，並計算時間邊界 (3 個月前到 6 個月後)
     const now = new Date();
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(now.getMonth() - 3);
-    threeMonthsAgo.setDate(1); // 設定為該月的第一天
+    threeMonthsAgo.setDate(1); // Set to the first day of the month for consistent comparison
 
     const sixMonthsLater = new Date();
     sixMonthsLater.setMonth(now.getMonth() + 6);
-    sixMonthsLater.setDate(1); // 設定為該月的第一天
+    sixMonthsLater.setDate(1); // Set to the first day of the month for consistent comparison
+
+    // For comparison, we only care about the year and month part of the order date
+    // and the month boundaries. So, set orderDate to the first day of its month.
+    const orderMonthStart = new Date(year, month - 1, 1);
 
     // 檢查訂單編號的月份是否在有效範圍內
-    // 我們只比較月份，不考慮具體日期和時間
-    if (orderMonthDate < threeMonthsAgo || orderMonthDate > sixMonthsLater) {
+    if (orderMonthStart < threeMonthsAgo || orderMonthStart > sixMonthsLater) {
         return false; // 訂單日期超出有效時間範圍
     }
 
-     // 4. 驗證流水號部分 (6 位數字)
-    if (!/^\d{6}$/.test(sequentialNumberPart)) {
-        return false; // 必須是 6 位數字
-    }
+    if (parseInt(sequentialNumberPart) < 1)
+        return false;
 
     return true; // All checks passed
 }
@@ -125,7 +86,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
     }
 
     let queryRunner;
-    const successfullyDeductedTickets: { zone: string; quantity: number }[] = [];
+    const successfullyDeductedTickets: { zone: string; quantity: number; sectionDetail: ShowtimeSectionsEntity }[] = [];
     let parsedActivityId: number | undefined;
     let showtimeId: string | undefined;
 
@@ -157,11 +118,17 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 responseSend(initResponseData(res, 1602), logger);
                 return;
             }
+            if (ticket.quantity > 4) {
+                responseSend(initResponseData(res, 1611), logger);
+                return;
+            }
         }
 
         // 3. 活動 ID 有效性檢查與狀態判斷
         const activityRepository = queryRunner.manager.getRepository(ActivityEntity);
         const showtimeRepository = queryRunner.manager.getRepository(ShowtimesEntity);
+        const showtimeSectionRepository = queryRunner.manager.getRepository(ShowtimeSectionsEntity); // Get repository for ShowtimeSections
+        const dailySequenceRepository = queryRunner.manager.getRepository(DailySequenceEntity); // <--- NEW
 
         const activity = await activityRepository.findOne({
             where: { id: parsedActivityId, is_deleted: false },
@@ -226,7 +193,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             }
 
             // 記錄成功預扣的票券
-            successfullyDeductedTickets.push({ zone: requestedTicket.zone, quantity: requestedTicket.quantity });
+            successfullyDeductedTickets.push({
+                zone: requestedTicket.zone,
+                quantity: requestedTicket.quantity,
+                sectionDetail: sectionDetail
+            });
 
             totalTicketsQuantity += requestedTicket.quantity;
             totalPriceAmount += requestedTicket.price * requestedTicket.quantity;
@@ -239,6 +210,49 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             });
         }
 
+        //showtimeSectionRepository 也要預扣
+        for (const deducted of successfullyDeductedTickets) {
+            // Ensure sectionDetail.vacancy is not null or undefined before subtraction
+            if (deducted.sectionDetail.vacancy === null || deducted.sectionDetail.vacancy === undefined) {
+                 logger.error(`ShowtimeSection ${deducted.sectionDetail.id} 的 vacancy 為 null 或 undefined。`);
+                 // Decide how to handle this error. For now, we'll let it proceed if it's just a warning.
+                 // You might want to rollback and return an error here.
+                 responseSend(initResponseData(res, 5602), logger);
+                 throw new Error('Seat vacancy data is missing.'); // Throw to trigger rollback
+            }
+            deducted.sectionDetail.vacancy -= deducted.quantity;
+            await showtimeSectionRepository.save(deducted.sectionDetail);
+            logger.info(`更新 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}: 新值 ${deducted.sectionDetail.vacancy}`);
+        }
+
+        // 5. 更新訂單編號
+        const orderDate = new Date();
+        const year = orderDate.getFullYear();
+        const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = orderDate.getDate().toString().padStart(2, '0');
+        const yearMonthDay = `${year}${month}${day}`;
+
+        // Attempt to find the daily sequence with pessimistic write lock
+        let dailySequence = await dailySequenceRepository.findOne({
+            where: { date_key: yearMonthDay },
+            lock: { mode: 'pessimistic_write' } // Locks the row for the duration of the transaction
+        });
+
+       if (!dailySequence) {
+            // If no sequence exists for today, create a new one
+            dailySequence = dailySequenceRepository.create({
+                date_key: yearMonthDay,
+                sequence: 0, // Will be incremented to 1 for the first order
+            });
+        }
+
+        dailySequence.sequence += 1; // Increment the sequence
+        await dailySequenceRepository.save(dailySequence); // Save the updated sequence within the transaction
+
+        const paddedSequence = dailySequence.sequence.toString().padStart(5, '0');
+        const newOrderNumber = `${yearMonthDay}${paddedSequence}`;
+        logger.info(`Generated order number: ${newOrderNumber}`); // Log the generated order number
+
         // 5. 建立訂單
         const orderRepository = queryRunner.manager.getRepository(OrderEntity);
         const orderTicketRepository = queryRunner.manager.getRepository(OrderTicketEntity);
@@ -246,7 +260,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const newOrder = new OrderEntity();
         newOrder.user_id = id;
         newOrder.showtime_id = showtimeId;
-        newOrder.order_number = await generateOrderNumber();
+        newOrder.order_number = newOrderNumber;
         newOrder.status = OrderStatus.PROCESSING;
         newOrder.total_count = totalTicketsQuantity;
         newOrder.total_price = totalPriceAmount;
@@ -255,6 +269,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         newOrder.pickup_status = PickupStatus.NOT_PICKED_UP;
 
         const savedOrder = await orderRepository.save(newOrder);
+        logger.info(`saved orderRepository`)
 
         const orderTicketsToSave: OrderTicketEntity[] = orderTicketsDetails.map(detail  => {
             const orderTicket = new OrderTicketEntity();
@@ -269,9 +284,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         // console.log(JSON.stringify(orderTicketsToSave));
 
         await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
+        // logger.info(`saved orderTicketRepository`)
 
         // 如果所有資料庫操作都成功，提交事務(原子操作)
         await queryRunner.commitTransaction();
+        // logger.info(`commitTransaction`)
 
         // 訂單建立成功
         responseSend(initResponseData(res, 2000, {
@@ -279,13 +296,31 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         }), logger);
 
     } catch (error) {
-        logger.error('postCreateOrder 錯誤:', error);
+        logger.error('postCreateOrder 錯誤:');
+        // --- NEW/MODIFIED LOGGING ---
+        if (error instanceof Error) {
+            logger.error(`Error Message: ${error.message}`);
+            logger.error(`Error Name: ${error.name}`);
+            logger.error(`Error Stack: ${error.stack}`);
+        } else {
+            logger.error(`Unknown Error Type: ${JSON.stringify(error)}`); // Fallback for non-Error objects
+        }
         // 如果成功地啟動了資料庫事務，並且這個事務目前還沒被成功提交或回滾，
         // 那麼我就嘗試回滾它，以確保資料庫的數據回到 "錯誤發生前" 的狀態。
         if (queryRunner && queryRunner.isTransactionActive) {
             try {
                 await queryRunner.rollbackTransaction();
                 logger.info('資料庫事務已回滾。');
+
+                // 重要：所有在 `startTransaction` 和 `commitTransaction` 之間的 `queryRunner.manager.save()`
+                // (包括透過 showtimeSectionRepository.save() 進行的 vacancy 更新)
+                // 都會被此 rollback 操作自動回滾。因此，不需要在這裡對資料庫進行額外的回滾操作。
+                for (const deducted of successfullyDeductedTickets) {
+                     if (deducted.sectionDetail.vacancy !== null && deducted.sectionDetail.vacancy !== undefined) {
+                         deducted.sectionDetail.vacancy += deducted.quantity;
+                         logger.info(`由於回滾，理論上會自動恢復 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}`);
+                     }
+                }
             } catch (rollbackError) {
                 logger.error(`資料庫事務回滾失敗: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
             }
