@@ -4,6 +4,7 @@ import authRouter from '@routes/v1/auth';
 import adminRouter from '@routes/v1/admin';
 import frontpageRouter from '@routes/v1/frontpage';
 import activityRouter from '@routes/v1/activity';
+import organizerRouter from '@routes/v1/organizer';
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use('/auth', authRouter);
 router.use('/admin', adminRouter);
 router.use('/frontpage', frontpageRouter);
 router.use('/activity', activityRouter);
+router.use('/organizer', organizerRouter);
 
 export default router;
