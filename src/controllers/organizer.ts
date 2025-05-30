@@ -18,16 +18,6 @@ const ALLOWED_MIME_TYPES = {
 } as const;
 type AllowedMimeTypes = keyof typeof ALLOWED_MIME_TYPES;
 
-export async function postApply(req: JWTRequest, res: Response, next: NextFunction) {
-    try {
-
-        responseSend(initResponseData(res, 2000))
-    } catch (error) {
-        logger.error('postApply 錯誤:', error)
-        next(error)
-    }
-}
-
 export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id: userId } = getAuthUser(req);
@@ -45,8 +35,6 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
             .where('organizer.user_id = :userId', { userId })
             .andWhere('activity.is_deleted = false');
 
-        qb.orderBy('activity.created_at', 'DESC');
-
         // Optional filters
         if (name) {
             qb.andWhere('activity.name ILIKE :name', { name: `%${name}%` });
@@ -59,6 +47,8 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
         if (categoryId) {
             qb.andWhere('activity.category_id = :categoryId', { categoryId });
         }
+
+        qb.orderBy('activity.created_at', 'DESC');
 
         // Pagination
         qb.skip(offset).take(limit);

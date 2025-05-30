@@ -56,7 +56,7 @@ export const activities = [
         status: ActivityStatus.Published,
         description: '這是一個測試活動',
         information: '活動資訊',
-        start_time: '2025-07-01 12:00+08',
+        start_time: '2025-07-19 12:00+08',
         end_time: '2025-07-26 17:00+08',
         sales_start_time: '2025-06-01 12:00+08',
         sales_end_time: '2025-07-31 12:00+08',

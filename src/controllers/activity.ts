@@ -3,11 +3,33 @@ import { Request as JWTRequest } from 'express-jwt';
 import getLogger from '../utils/logger';
 import responseSend, { initResponseData } from '../utils/serverResponse';
 import { DbEntity } from '../constants/dbEntity';
+import { ActivityEntity } from '../entities/Activity'
+import { ActivityTypeEntity } from '../entities/ActivityType'
 import { dataSource } from '../db/data-source';
 import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { ActivityStatus } from '../enums/activity';
 
 const logger = getLogger('Activity');
+
+export async function getCategory(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const qb = dataSource
+            .getRepository(ActivityTypeEntity)
+            .createQueryBuilder('category')
+            .orderBy('category.id', 'ASC');
+
+        const [results, total_count] = await qb.getManyAndCount();
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            total_count: total_count,
+            results: results
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error('getActivity 錯誤', error);
+        next(error);
+    }
+}
 
 export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
     try {
@@ -156,5 +178,74 @@ export async function getShowtime(req: JWTRequest, res: Response, next: NextFunc
     } catch (error) {
         logger.error('getShowtime 錯誤', error);
         next(error);
+    }
+}
+
+export async function search(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const keyword = req.query.keyword;
+        const category = req.query.category as string;
+        const location = req.query.location as string;
+        const date_start = req.query.date_start;
+        const date_end = req.query.date_end;
+        const offset = parseInt(req.query.offset as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const status = ActivityStatus.Published;
+        const qb = dataSource
+            .getRepository(ActivityEntity)
+            .createQueryBuilder('activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .leftJoinAndSelect('activity.category', 'category')
+            .leftJoinAndSelect('activity.sites', 'sites')
+            .leftJoin('activity.showtimes', 'showtime')
+            .where('activity.status = :status', { status })
+            .andWhere('activity.is_deleted = false');
+
+        // optional filters
+        if (keyword) {
+            qb.andWhere('activity.name ILIKE :keyword', { keyword: `%${keyword}%` });
+        }
+
+        // filter by categoryIds: '1,9,12'
+        if (category) {
+            const categoryIds = category.split(',').map(id => parseInt(id.trim(), 10));
+            qb.andWhere('activity.category_id IN (:...categoryIds)', { categoryIds });
+        }
+
+        // filter by areaIds: '2,8,15'
+        if (location) {
+            const areaIds = location.split(',').map(id => parseInt(id.trim(), 10));
+            qb.andWhere('showtime.site_id = sites.id')
+            qb.andWhere('sites.area_id IN (:...areaIds)', { areaIds });
+        }
+
+        // TODO: filter by tags
+
+        // filter by date range
+        if (date_start && date_end) {
+            qb.andWhere('activity.start_time BETWEEN :start AND :end', {
+                start: new Date(date_start as string),
+                end: new Date(date_end as string),
+            });
+        } else if (date_start) {
+            qb.andWhere('activity.start_time >= :start', { start: new Date(date_start as string) });
+        } else if (date_end) {
+            qb.andWhere('activity.start_time <= :end', { end: new Date(date_end as string) });
+        }
+
+        // TODO: more options to sort
+        qb.orderBy('activity.created_at', 'DESC');
+
+        qb.skip(offset).take(limit);
+        const [activities, total_count] = await qb.getManyAndCount();
+        const responseData = initResponseData(res, 2000);
+        responseData.data = {
+            total_count: total_count,
+            results: activities
+        };
+        responseSend(responseData);
+    } catch (error) {
+        logger.error(`搜尋活動錯誤：${error}`)
+        next(error)
     }
 }
