@@ -29,5 +29,6 @@ router.post('/upload', auth, userController.postUpload)
 router.post('/order', auth, orderController.postCreateOrder)
 router.get('/order/:order_id', auth, orderController.getOrderDetail)
 router.get('/orders', auth, orderController.getUserOrders)
+router.get('/ticket/:ticket_id', auth, orderController.getTicketDetail)
 router.post('/apply-as-organizer', auth, userController.applyAsOrganizer)
 export default router

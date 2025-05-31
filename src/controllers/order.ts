@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { Request as JWTRequest } from 'express-jwt'
 import { dataSource } from '../db/data-source'
-import { isNotValidInteger } from '../utils/validation';
+import { isNotValidInteger, isNotValidUuid } from '../utils/validation';
 import getLogger from '../utils/logger'
 import responseSend, { initResponseData } from '../utils/serverResponse'
 import { getAuthUser } from '../middlewares/auth'
@@ -11,8 +11,10 @@ import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } f
 import { OrderTicketEntity } from '../entities/OrderTicket';
 // import { ActivitySiteEntity } from '../entities/ActivitySite';
 // import { OrganizerEntity } from '../entities/Organizer';
-// import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
+import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { UserEntity } from '../entities/User';
+import { TicketEntity } from '../entities/Ticket';
+import { DailySequenceEntity } from '../entities/DailySequence';
 
 import { seatInventoryService } from '../utils/seatInventory';
 
@@ -32,9 +34,47 @@ interface OrderRequestBody {
     tickets: TicketInput[];
 }
 
-// 基於時間產生的訂單編號
-function generateOrderNumber(): string {
-    return `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+function _validateOrderNumber(orderNumber: string): boolean {
+    // 1. Check total length and format
+    if (!/^\d{13}$/.test(orderNumber)) { // YYYYMMDD (8 digits) + SSSSS (5 digits) = 13 digits
+        return false; // 必須是 13 位數字
+    }
+
+    const datePart = orderNumber.substring(0, 8); // YYYYMMDD
+    const sequentialNumberPart = orderNumber.substring(8, 13); // SSSSS
+
+    const year = parseInt(datePart.substring(0, 4), 10);
+    const month = parseInt(datePart.substring(4, 6), 10);
+    const day = parseInt(datePart.substring(6, 8), 10);
+
+    // 基本日期驗證 (month 1-12, day based on month)
+    if (month < 1 || month > 12 || day < 1 || day > 31) { // Basic check, more robust date validation can be added
+        return false;
+    }
+
+    // 獲取當前日期，並計算時間邊界 (3 個月前到 6 個月後)
+    const now = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    threeMonthsAgo.setDate(1); // Set to the first day of the month for consistent comparison
+
+    const sixMonthsLater = new Date();
+    sixMonthsLater.setMonth(now.getMonth() + 6);
+    sixMonthsLater.setDate(1); // Set to the first day of the month for consistent comparison
+
+    // For comparison, we only care about the year and month part of the order date
+    // and the month boundaries. So, set orderDate to the first day of its month.
+    const orderMonthStart = new Date(year, month - 1, 1);
+
+    // 檢查訂單編號的月份是否在有效範圍內
+    if (orderMonthStart < threeMonthsAgo || orderMonthStart > sixMonthsLater) {
+        return false; // 訂單日期超出有效時間範圍
+    }
+
+    if (parseInt(sequentialNumberPart) < 1)
+        return false;
+
+    return true; // All checks passed
 }
 
 //建立訂單
@@ -46,7 +86,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
     }
 
     let queryRunner;
-    const successfullyDeductedTickets: { zone: string; quantity: number }[] = [];
+    const successfullyDeductedTickets: { zone: string; quantity: number; sectionDetail: ShowtimeSectionsEntity }[] = [];
     let parsedActivityId: number | undefined;
     let showtimeId: string | undefined;
 
@@ -78,11 +118,17 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 responseSend(initResponseData(res, 1602), logger);
                 return;
             }
+            if (ticket.quantity > 4) {
+                responseSend(initResponseData(res, 1611), logger);
+                return;
+            }
         }
 
         // 3. 活動 ID 有效性檢查與狀態判斷
         const activityRepository = queryRunner.manager.getRepository(ActivityEntity);
         const showtimeRepository = queryRunner.manager.getRepository(ShowtimesEntity);
+        const showtimeSectionRepository = queryRunner.manager.getRepository(ShowtimeSectionsEntity); // Get repository for ShowtimeSections
+        const dailySequenceRepository = queryRunner.manager.getRepository(DailySequenceEntity); // <--- NEW
 
         const activity = await activityRepository.findOne({
             where: { id: parsedActivityId, is_deleted: false },
@@ -119,6 +165,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const showtimeSections = showtime.showtimeSections;
         let totalTicketsQuantity = 0; // 用於計算 total_count
         let totalPriceAmount = 0; // 用於計算 total_price
+        const orderTicketsDetails: { sectionId: string; price: number; quantity: number; }[] = []; // To store sectionId for OrderTicketEntity
 
         for (const requestedTicket of tickets) {
             const sectionDetail = showtimeSections.find(section => section.section === requestedTicket.zone);
@@ -144,12 +191,67 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 responseSend(initResponseData(res, 1609), logger);
                 return;
             }
+
             // 記錄成功預扣的票券
-            successfullyDeductedTickets.push({ zone: requestedTicket.zone, quantity: requestedTicket.quantity });
+            successfullyDeductedTickets.push({
+                zone: requestedTicket.zone,
+                quantity: requestedTicket.quantity,
+                sectionDetail: sectionDetail
+            });
 
             totalTicketsQuantity += requestedTicket.quantity;
             totalPriceAmount += requestedTicket.price * requestedTicket.quantity;
+
+            // Store the section's ID for creating OrderTicketEntity
+            orderTicketsDetails.push({
+                sectionId: sectionDetail.id, // Use the ID of the ShowtimeSectionEntity
+                price: requestedTicket.price,
+                quantity: requestedTicket.quantity,
+            });
         }
+
+        //showtimeSectionRepository 也要預扣
+        for (const deducted of successfullyDeductedTickets) {
+            // Ensure sectionDetail.vacancy is not null or undefined before subtraction
+            if (deducted.sectionDetail.vacancy === null || deducted.sectionDetail.vacancy === undefined) {
+                 logger.error(`ShowtimeSection ${deducted.sectionDetail.id} 的 vacancy 為 null 或 undefined。`);
+                 // Decide how to handle this error. For now, we'll let it proceed if it's just a warning.
+                 // You might want to rollback and return an error here.
+                 responseSend(initResponseData(res, 5602), logger);
+                 throw new Error('Seat vacancy data is missing.'); // Throw to trigger rollback
+            }
+            deducted.sectionDetail.vacancy -= deducted.quantity;
+            await showtimeSectionRepository.save(deducted.sectionDetail);
+            logger.info(`更新 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}: 新值 ${deducted.sectionDetail.vacancy}`);
+        }
+
+        // 5. 更新訂單編號
+        const orderDate = new Date();
+        const year = orderDate.getFullYear();
+        const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = orderDate.getDate().toString().padStart(2, '0');
+        const yearMonthDay = `${year}${month}${day}`;
+
+        // Attempt to find the daily sequence with pessimistic write lock
+        let dailySequence = await dailySequenceRepository.findOne({
+            where: { date_key: yearMonthDay },
+            lock: { mode: 'pessimistic_write' } // Locks the row for the duration of the transaction
+        });
+
+       if (!dailySequence) {
+            // If no sequence exists for today, create a new one
+            dailySequence = dailySequenceRepository.create({
+                date_key: yearMonthDay,
+                sequence: 0, // Will be incremented to 1 for the first order
+            });
+        }
+
+        dailySequence.sequence += 1; // Increment the sequence
+        await dailySequenceRepository.save(dailySequence); // Save the updated sequence within the transaction
+
+        const paddedSequence = dailySequence.sequence.toString().padStart(5, '0');
+        const newOrderNumber = `${yearMonthDay}${paddedSequence}`;
+        logger.info(`Generated order number: ${newOrderNumber}`); // Log the generated order number
 
         // 5. 建立訂單
         const orderRepository = queryRunner.manager.getRepository(OrderEntity);
@@ -158,7 +260,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const newOrder = new OrderEntity();
         newOrder.user_id = id;
         newOrder.showtime_id = showtimeId;
-        newOrder.order_number = generateOrderNumber();
+        newOrder.order_number = newOrderNumber;
         newOrder.status = OrderStatus.PROCESSING;
         newOrder.total_count = totalTicketsQuantity;
         newOrder.total_price = totalPriceAmount;
@@ -167,39 +269,58 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         newOrder.pickup_status = PickupStatus.NOT_PICKED_UP;
 
         const savedOrder = await orderRepository.save(newOrder);
+        logger.info(`saved orderRepository`)
 
-        const orderTicketsToSave: OrderTicketEntity[] = tickets.map(ticket => {
+        const orderTicketsToSave: OrderTicketEntity[] = orderTicketsDetails.map(detail  => {
             const orderTicket = new OrderTicketEntity();
             orderTicket.order_id = savedOrder.id;
-            orderTicket.section_id = ticket.zone;
-            orderTicket.price = ticket.price;
-            orderTicket.quantity = ticket.quantity;
-            orderTicket.ticket_type = 1;
+            orderTicket.section_id = detail.sectionId;
+            orderTicket.price = detail.price;
+            orderTicket.quantity = detail.quantity;
+            orderTicket.ticket_type = 1;// 預設電子票券
             return orderTicket;
         });
 
-        await orderTicketRepository.save(orderTicketsToSave);
+        // console.log(JSON.stringify(orderTicketsToSave));
+
+        await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
+        // logger.info(`saved orderTicketRepository`)
 
         // 如果所有資料庫操作都成功，提交事務(原子操作)
         await queryRunner.commitTransaction();
+        // logger.info(`commitTransaction`)
 
         // 訂單建立成功
-        responseSend(initResponseData(res, 200, {
-            message: '訂單成立',
-            status: true,
-            data: {
-                order_id: savedOrder.order_number
-            }
+        responseSend(initResponseData(res, 2000, {
+            order_id: savedOrder.order_number
         }), logger);
 
     } catch (error) {
-        logger.error('postCreateOrder 錯誤:', error);
+        logger.error('postCreateOrder 錯誤:');
+        // --- NEW/MODIFIED LOGGING ---
+        if (error instanceof Error) {
+            logger.error(`Error Message: ${error.message}`);
+            logger.error(`Error Name: ${error.name}`);
+            logger.error(`Error Stack: ${error.stack}`);
+        } else {
+            logger.error(`Unknown Error Type: ${JSON.stringify(error)}`); // Fallback for non-Error objects
+        }
         // 如果成功地啟動了資料庫事務，並且這個事務目前還沒被成功提交或回滾，
         // 那麼我就嘗試回滾它，以確保資料庫的數據回到 "錯誤發生前" 的狀態。
         if (queryRunner && queryRunner.isTransactionActive) {
             try {
                 await queryRunner.rollbackTransaction();
                 logger.info('資料庫事務已回滾。');
+
+                // 重要：所有在 `startTransaction` 和 `commitTransaction` 之間的 `queryRunner.manager.save()`
+                // (包括透過 showtimeSectionRepository.save() 進行的 vacancy 更新)
+                // 都會被此 rollback 操作自動回滾。因此，不需要在這裡對資料庫進行額外的回滾操作。
+                for (const deducted of successfullyDeductedTickets) {
+                     if (deducted.sectionDetail.vacancy !== null && deducted.sectionDetail.vacancy !== undefined) {
+                         deducted.sectionDetail.vacancy += deducted.quantity;
+                         logger.info(`由於回滾，理論上會自動恢復 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}`);
+                     }
+                }
             } catch (rollbackError) {
                 logger.error(`資料庫事務回滾失敗: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
             }
@@ -217,12 +338,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             }
         }
 
-        responseSend(initResponseData(res, 400, {
-            message: '訂單失敗',
-            status: false,
+        responseSend(initResponseData(res, 1610, {
             data: {}
         }), logger);
 
+        logger.error('建立訂單失敗', error)
         next(error);
     } finally {
         if (queryRunner) {
@@ -242,7 +362,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
         const { id:userId } = getAuthUser(req)
         const { order_id } = req.params
 
-        if (isNotValidInteger(order_id)) {
+        if (typeof order_id !== 'string' || order_id.length === 0) {
             responseSend(initResponseData(res, 1000), logger);
             return;
         }
@@ -286,7 +406,8 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
 
         const responseData = initResponseData(res, 2000)
         responseData.data = {
-            orderId: order.order_number,
+            orderId: order_id,
+            orderNumber: order.order_number,
             eventName: order.showtime.activity.name,
             eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
             location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
@@ -311,7 +432,8 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
 }
 
 interface OrderListItem {
-    orderId: string;
+    orderId: number;
+    orderNumber: string;
     eventName: string;
     eventDate: string;
     location: string;
@@ -338,6 +460,7 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
         const sortBy = (req.query.sort_by as string) || 'eventDate'; // 預設排序欄位
         const order = (req.query.order as string) || 'desc'; // 預設排序順序，新時間排前面
 
+        //fix later: 考慮改用時間來限制，如最舊時間為 3 個月前
         if (isNotValidInteger(page) || isNotValidInteger(pageSize) || page < 1 || pageSize < 1 || pageSize > 10) {
             responseSend(initResponseData(res, 1000), logger);
             return;
@@ -393,7 +516,8 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
             }));
 
             return {
-                orderId: order.order_number,
+                orderId: order.id,
+                orderNumber: order.order_number,
                 eventName: order.showtime.activity.name,
                 eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
                 location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
@@ -424,5 +548,83 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
     } catch (error) {
         logger.error('取得個人訂單資訊列表錯誤', error)
         next(error)
+    }
+}
+
+//取得票券詳細資訊
+export async function getTicketDetail(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const { ticket_id } = req.params;
+
+        if (isNotValidUuid(ticket_id)) {
+            responseSend(initResponseData(res, 1000), logger);
+            return;
+        }
+
+        const ticketRepository = dataSource.getRepository(TicketEntity);
+
+        const ticket = await ticketRepository.findOne({
+            where: {
+                id: ticket_id,
+                order: {
+                    user_id: userId
+                }
+            },
+            relations: [
+                'order',
+                'order.showtime',
+                'order.showtime.activity',
+                'order.showtime.site',
+                'order.showtime.activity.organizer',
+                'orderTicket'
+            ],
+        });
+
+        if (!ticket) {
+            responseSend(initResponseData(res, 1624), logger);
+            return;
+        }
+
+        const ticketStatusMap: { [key: number]: string } = {
+            0: '未使用',
+            1: '已使用',
+            2: '已失效', // 假設 2 代表失效
+        };
+        const ticketStatus = ticketStatusMap[ticket.status] || '未知狀態';
+
+        // 票券類型轉換 (根據 OrderTicketEntity 中的 ticket_type 欄位)
+        const ticketTypeMap: { [key: number]: string } = {
+            1: '電子票券',
+            2: '實體票券', // 假設 2 代表實體票券
+        };
+        const ticketType = ticketTypeMap[ticket.orderTicket.ticket_type] || '未知類型';
+
+        const formattedTicketDetail = {
+            ticket_code: ticket.ticket_code,
+            eventName: ticket.order.showtime.activity.name,
+            eventDate: new Date(ticket.order.showtime.start_time).toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false, // 24小時制
+            }).replace(/\//g, '/'), // 格式化為 "YYYY/MM/DD HH:MM"
+            location: `${ticket.order.showtime.site.name} / ${ticket.order.showtime.site.address}`,
+            organizer: ticket.order.showtime.activity.organizer.name,
+            status: ticketStatus,
+            ticketType: ticketType,
+            seats: ticket.section,
+        };
+
+        const responseData = initResponseData(res, 2000);
+        responseData.data = formattedTicketDetail;
+
+        responseSend(responseData);
+
+    } catch (error) {
+        logger.error(`取得票券詳細資訊錯誤`, error);
+        next(error);
     }
 }

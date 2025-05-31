@@ -59,7 +59,7 @@ server.listen(port, async () => {
     try {
         await redis.ping()
         logger.info('Redis 連線成功')
-        initAreaCache(dataSource, redis)
+        await initAreaCache(dataSource, redis)
         initSeatInventoryService(redis)
     } catch (error: unknown) {
         if (error instanceof Error) {

@@ -6,7 +6,6 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     Index,
-    OneToOne,
     ManyToOne,
     JoinColumn,
     OneToMany,
@@ -66,7 +65,7 @@ export class OrderTicketEntity {
     order!: OrderEntity
 
     /** 座位區域關聯 */
-    @OneToOne(()=> ShowtimeSectionsEntity)
+    @ManyToOne(()=> ShowtimeSectionsEntity)
     @JoinColumn({ name: 'section_id', referencedColumnName: 'id' })
     section!: ShowtimeSectionsEntity
 
