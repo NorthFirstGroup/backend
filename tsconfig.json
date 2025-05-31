@@ -6,7 +6,9 @@
             "@routes/*": ["./routes/*"],
             "@controllers/*": ["./controllers/*"],
             "@entities/*": ["./entities/*"],
-            "@constants/*": ["./constants/*"]
+            "@constants/*": ["./constants/*"],
+            "@middlewares/*": ["./middlewares/*"],
+            "@utils/*": ["./utils/*"]
         },
         /* 專案 */
         // "incremental": true,                              /* 儲存 .tsbuildinfo 檔案以允許專案的增量編譯。 */
