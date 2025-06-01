@@ -29,6 +29,7 @@ export async function getSeedUsers() {
       status: 1,
       role: UserRole.USER,
       phone: '0912345678',
+      location_ids: [2]
     },
     {
       id: userIds[1],
@@ -38,6 +39,7 @@ export async function getSeedUsers() {
       status: 1,
       role: UserRole.USER,
       phone: '0932345678',
+      location_ids: [4, 5]
     },
     {
       id: userIds[2],
@@ -47,6 +49,7 @@ export async function getSeedUsers() {
       status: 1,
       role: UserRole.ORGANIZER,
       phone: '0931345679',
+      location_ids: [2, 8, 15]
     },
     {
       id: userIds[3],
@@ -56,6 +59,7 @@ export async function getSeedUsers() {
       status: 1,
       role: UserRole.ORGANIZER,
       phone: '0912345679',
+      location_ids: [17, 18, 19]
     },
     {
       id: userIds[4],
@@ -65,6 +69,7 @@ export async function getSeedUsers() {
       status: 1,
       role: UserRole.ADMIN,
       phone: '0987654321',
+      location_ids: [2]
     },
   ];
   return users;
