@@ -26,8 +26,8 @@ export class TicketEntity {
     order_id!: number
 
     /** 訂單區域id，關聯order_tickets表，禁止為空 */
-    @Column({ type: 'integer', nullable: false })
-    order_ticket_id!: number
+    @Column({ type: 'uuid', nullable: false })
+    order_ticket_id!: string
 
     /** 顯示用訂單編號，禁止為空 */
     @Column({ type: 'varchar', nullable: false })

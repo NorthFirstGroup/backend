@@ -50,4 +50,22 @@ router
     .put(auth, isActivityOwner, organizerSiteCtrl.update)
     .delete(auth, isActivityOwner, organizerSiteCtrl.delete);
 
+// 取得廠商單一活動場次
+router.get('/activity/:activity_id/showtime', auth, isOrganizer, organizerController.getActivityShowtimes);
+// 新增廠商活動場次
+router.post('/activity/:activity_id/showtime', auth, isOrganizer, organizerController.postActivityShowtime);
+// 更新活動場次
+router.put('/activity/:activity_id/showtime/:showtime_id', auth, isOrganizer, organizerController.putActivityShowtime);
+// 刪除活動場次
+router.delete(
+    '/activity/:activity_id/showtime/:showtime_id',
+    auth,
+    isOrganizer,
+    organizerController.deleteActivityShowtime
+);
+// 取得票券座位資料
+router.get('/activity/ticket/:ticket_id', auth, isOrganizer, organizerController.getTicket);
+// 票券座位狀態改為已使用
+router.put('/activity/ticket/:ticket_id', auth, isOrganizer, organizerController.putTicket);
+
 export default router;

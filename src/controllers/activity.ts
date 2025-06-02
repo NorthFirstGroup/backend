@@ -3,8 +3,8 @@ import { Request as JWTRequest } from 'express-jwt';
 import getLogger from '../utils/logger';
 import responseSend, { initResponseData } from '../utils/serverResponse';
 import { DbEntity } from '../constants/dbEntity';
-import { ActivityEntity } from '../entities/Activity'
-import { ActivityTypeEntity } from '../entities/ActivityType'
+import { ActivityEntity } from '../entities/Activity';
+import { ActivityTypeEntity } from '../entities/ActivityType';
 import { dataSource } from '../db/data-source';
 import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { ActivityStatus } from '../enums/activity';
@@ -37,10 +37,20 @@ export async function getActivity(req: JWTRequest, res: Response, next: NextFunc
         // 取得資料
         const activityRepository = dataSource.getRepository(DbEntity.Activity);
 
-        const activity = await activityRepository.findOne({
-            where: { id: activity_id, status: ActivityStatus.Published },
-            select: ['id', 'name', 'category_id', 'cover_image', 'description', 'information']
-        });
+        const activity = await activityRepository
+            .createQueryBuilder('activity')
+            .leftJoin('activity.category', 'category')
+            .where('activity.id = :id', { id: activity_id })
+            .andWhere('activity.status = :status', { status: ActivityStatus.Published })
+            .select([
+                'activity.id AS id',
+                'activity.name AS name',
+                'activity.cover_image AS cover_image',
+                'activity.description AS description',
+                'activity.information AS information',
+                'category.name AS category' // 取得 category.name 並命名為 category
+            ])
+            .getRawOne();
 
         if (!activity) {
             return responseSend(initResponseData(res, 1018));
@@ -61,26 +71,27 @@ export async function getRecommend(req: JWTRequest, res: Response, next: NextFun
         // 隨機取得 10 筆資料
         const recommends = await activityRepository
             .createQueryBuilder('activity')
+            .leftJoin('activity.category', 'category')
             .where('activity.status = :status', {
                 status: ActivityStatus.Published
             })
             .select([
-                'activity.id',
-                'activity.name',
-                'activity.category_id',
-                'activity.cover_image',
-                'activity.start_time',
-                'activity.end_time'
+                'activity.id AS id',
+                'activity.name AS name',
+                'category.name AS category', // 取得 category.name 並命名為 category
+                'activity.cover_image AS cover_image',
+                'activity.start_time AS start_time',
+                'activity.end_time AS end_time'
             ])
             .orderBy('RANDOM()')
             .limit(10)
-            .getMany();
+            .getRawMany();
 
         if (!recommends || recommends.length === 0) {
             return responseSend(initResponseData(res, 1018));
         }
 
-        return responseSend(initResponseData(res, 2000, { results: recommends }));
+        return responseSend(initResponseData(res, 2000, { total_count:recommends.length, results: recommends }));
     } catch (error) {
         logger.error('getRecommend 錯誤', error);
         next(error);
@@ -94,6 +105,9 @@ export async function getShowtimeAll(req: JWTRequest, res: Response, next: NextF
 
         // 取得所有場次資料
         const showtimes = await showtimesRepository.find({
+            where: {
+                activity_id: req.params.activity_id
+            },
             relations: {
                 site: true,
                 showtimeSections: true
