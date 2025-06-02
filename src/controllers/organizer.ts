@@ -11,7 +11,7 @@ import { ShowtimeSectionsEntity } from '@entities/ShowtimeSections';
 import { ActivityEntity } from '@entities/Activity';
 import { ActivitySiteEntity } from '@entities/ActivitySite';
 import { OrganizerEntity } from '@entities/Organizer';
-import { isNotValidInteger, isValidDateFormat, validator } from '@utils/validation';
+import { isNotValidInteger, isNotValidUuid, isValidDateFormat, validator } from '@utils/validation';
 import { seatInventoryService } from '@utils/seatInventory';
 import { OrderEntity } from '@entities/Order';
 import { ActivityStatus } from '@enums/activity';
@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/zh-tw';
 import { transformAPIKeyToCamel } from '@/utils/APITransformer';
 import { AuthRequest } from '@/middlewares/organizer';
+import { ActivityTypeEntity } from '@/entities/ActivityType';
 
 dayjs.locale('zh-tw');
 const logger = getLogger('Organizer');
@@ -67,8 +68,8 @@ const siteValidator = async (reqBody: any) => {
     const areaId = await validator.validArea(area);
 
     prices.forEach((price: { section: string; price: number; capacity: number }) => {
-        if (!price.section || price.section.length > 50) {
-            throw new CustomError(RespStatusCode.FIELD_ERROR, '分區名稱不得為空且限制在20字以內');
+        if (!price.section || price.section.length > 30) {
+            throw new CustomError(RespStatusCode.FIELD_ERROR, '分區名稱不得為空且限制在30字以內');
         }
         if (typeof price.price !== 'number' || price.price < 0) {
             throw new CustomError(RespStatusCode.FIELD_ERROR, '價格必須為正數');
@@ -242,13 +243,13 @@ const createActivity = async (req: JWTRequest, res: Response, next: NextFunction
         validator.validTimeFormat(reqBody.endTime, 'end_time');
 
         // 檢查活動分類是否存在
-        const categoryRepo = dataSource.getRepository('ActivityType');
+        const categoryRepo = dataSource.getRepository(ActivityTypeEntity);
         const categoryQ = await categoryRepo.findOneBy({ id: reqBody.categoryId });
         if (!categoryQ) {
             throw new CustomError(RespStatusCode.FIELD_ERROR, `category_id:${reqBody.categoryId} does not exist`);
         }
         const organizer = await user.organizer;
-        const activityRepo = dataSource.getRepository('Activity');
+        const activityRepo = dataSource.getRepository(ActivityEntity);
 
         const newActivity = activityRepo.create({
             organizer: organizer,
@@ -320,12 +321,12 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
         validator.validTimeFormat(reqBody.endTime, 'end_time');
 
         // 檢查活動分類是否存在
-        const categoryRepo = dataSource.getRepository('ActivityType');
+        const categoryRepo = dataSource.getRepository(ActivityTypeEntity);
         const categoryQ = await categoryRepo.findOneBy({ id: reqBody.categoryId });
         if (!categoryQ) {
             throw new CustomError(RespStatusCode.FIELD_ERROR, `category_id:${reqBody.categoryId} does not exist`);
         }
-        const activityRepo = dataSource.getRepository('Activity');
+        const activityRepo = dataSource.getRepository(ActivityEntity);
         // 取得organizer
         const organizer = await user.organizer;
         const result = await activityRepo.update(activityId, {
@@ -355,7 +356,7 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
 const deleteActivity = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const { activityId } = req.params;
 
-    const activityRepo = dataSource.getRepository('Activity');
+    const activityRepo = dataSource.getRepository(ActivityEntity);
     if (!req.activity) {
         throw new CustomError(RespStatusCode.NO_PERMISSION);
     }
@@ -371,20 +372,25 @@ const deleteActivity = async (req: AuthRequest, res: Response, next: NextFunctio
         throw new CustomError(RespStatusCode.DELETE_FAILED, '活動已經有訂單，無法刪除');
     }
 
-    await activityRepo.remove(req.activity);
+    const result = await activityRepo.update(activityId, {
+        is_deleted: true
+    });
+    if (result.affected === 0) {
+        throw new CustomError(RespStatusCode.DELETE_FAILED);
+    }
     responseSend(initResponseData(res, 2000));
 };
 
 // organizer Site CRUD operations
-// 56. 取得活動場地
+// 56. 取得活動場地列表
 const getSiteByActivityId = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         if (!req.activity) {
             throw new CustomError(RespStatusCode.NO_PERMISSION);
         }
-        const siteRepo = dataSource.getRepository('ActivitySiteEntity');
+        const siteRepo = dataSource.getRepository(ActivitySiteEntity);
         const sites = await siteRepo.find({
-            where: { activity: { id: req.activity } }
+            where: { activity: { id: req.activity.id } }
         });
         responseSend(initResponseData(res, 2000, sites));
     } catch (error) {
@@ -398,8 +404,12 @@ const createSite = async (req: AuthRequest, res: Response, next: NextFunction) =
         if (!activityQ) {
             throw new CustomError(RespStatusCode.NO_PERMISSION);
         }
-        if (activityQ.status === ActivityStatus.Finish || activityQ.status === ActivityStatus.Cancel) {
-            throw new CustomError(RespStatusCode.NO_PERMISSION, '活動已經結束或取消，無法變更場地');
+        if (
+            activityQ.status === ActivityStatus.Finish ||
+            activityQ.status === ActivityStatus.Cancel ||
+            activityQ.status === ActivityStatus.OnGoing
+        ) {
+            throw new CustomError(RespStatusCode.NO_PERMISSION, '活動已開賣/結束/取消，無法變更場地');
         }
         const reqBody = transformAPIKeyToCamel(req.body);
         const validData = await siteValidator(reqBody);
@@ -426,8 +436,12 @@ const updateSite = async (req: AuthRequest, res: Response, next: NextFunction) =
         if (!activityQ) {
             throw new CustomError(RespStatusCode.NO_PERMISSION);
         }
-        if (activityQ.status === ActivityStatus.Finish || activityQ.status === ActivityStatus.Cancel) {
-            throw new CustomError(RespStatusCode.NO_PERMISSION, '活動已經結束或取消，無法變更場地');
+        if (
+            activityQ.status === ActivityStatus.Finish ||
+            activityQ.status === ActivityStatus.Cancel ||
+            activityQ.status === ActivityStatus.OnGoing
+        ) {
+            throw new CustomError(RespStatusCode.NO_PERMISSION, '活動已開賣/結束/取消，無法變更場地');
         }
         const reqBody = transformAPIKeyToCamel(req.body);
         const validData = await siteValidator(reqBody);
@@ -464,8 +478,12 @@ const deleteSite = async (req: AuthRequest, res: Response, next: NextFunction) =
         if (!activityQ) {
             throw new CustomError(RespStatusCode.NO_PERMISSION);
         }
-        if (activityQ.status === ActivityStatus.Finish || activityQ.status === ActivityStatus.Cancel) {
-            throw new CustomError(RespStatusCode.NO_PERMISSION, '活動已經結束或取消，無法變更場地');
+        if (
+            activityQ.status === ActivityStatus.Finish ||
+            activityQ.status === ActivityStatus.Cancel ||
+            activityQ.status === ActivityStatus.OnGoing
+        ) {
+            throw new CustomError(RespStatusCode.NO_PERMISSION, '活動已開賣/結束/取消，無法變更場地');
         }
         const siteRepo = dataSource.getRepository(ActivitySiteEntity);
         const siteQ = await siteRepo.findOneBy({
