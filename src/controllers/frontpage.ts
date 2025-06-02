@@ -4,7 +4,6 @@ import getLogger from '../utils/logger';
 import responseSend, { initResponseData } from '../utils/serverResponse';
 import { dataSource } from '../db/data-source';
 import { DbEntity } from '../constants/dbEntity';
-import { Between } from 'typeorm';
 import { ActivityStatus } from '../enums/activity';
 
 const logger = getLogger('Frontpage');
@@ -35,10 +34,19 @@ export async function getHotTopics(req: JWTRequest, res: Response, next: NextFun
         // 取得清單資料
         const activityRepository = dataSource.getRepository(DbEntity.Activity);
 
-        const topics = await activityRepository.find({
-            where: { status: ActivityStatus.Published },
-            select: ['id', 'name', 'cover_image', 'category_id', 'start_time', 'end_time']
-        });
+        const topics = await activityRepository
+            .createQueryBuilder('activity')
+            .leftJoin('activity.category', 'category')
+            .where('activity.status = :status', { status: ActivityStatus.Published })
+            .select([
+                'activity.id AS id',
+                'activity.name AS name',
+                'activity.cover_image AS cover_image',
+                'activity.start_time AS start_time',
+                'activity.end_time AS end_time',
+                'category.name AS category' // 取得 category.name 並命名為 category
+            ])
+            .getRawMany();
 
         if (!topics || topics.length === 0) {
             return responseSend(initResponseData(res, 1018));
@@ -57,12 +65,19 @@ export async function getNewArrivals(req: JWTRequest, res: Response, next: NextF
         const activityRepository = dataSource.getRepository(DbEntity.Activity);
 
         // 取得全新登場近到遠
-        const newArrivals = await activityRepository.find({
-            where: { status: ActivityStatus.Published },
-            select: ['id', 'name', 'cover_image', 'category_id'],
-            order: { created_at: 'DESC' },
-            take: 10
-        });
+        const newArrivals = await activityRepository
+            .createQueryBuilder('activity')
+            .leftJoin('activity.category', 'category')
+            .where('activity.status = :status', { status: ActivityStatus.Published })
+            .orderBy('activity.created_at', 'DESC') // 排序
+            .take(10) // 限制筆數
+            .select([
+                'activity.id AS id',
+                'activity.name AS name',
+                'activity.cover_image AS cover_image',
+                'category.name AS category' // 取得 category.name 並命名為 category
+            ])
+            .getRawMany();
 
         if (!newArrivals || newArrivals.length === 0) {
             return responseSend(initResponseData(res, 1018));
@@ -80,10 +95,19 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
         // 取得清單資料
         const activityRepository = dataSource.getRepository(DbEntity.Activity);
 
-        const lowStocks = await activityRepository.find({
-            where: { status: ActivityStatus.Published },
-            select: ['id', 'name', 'cover_image', 'category_id', 'start_time', 'end_time']
-        });
+        const lowStocks = await activityRepository
+            .createQueryBuilder('activity')
+            .leftJoin('activity.category', 'category')
+            .where('activity.status = :status', { status: ActivityStatus.Published })
+            .select([
+                'activity.id AS id',
+                'activity.name AS name',
+                'activity.cover_image AS cover_image',
+                'category.name AS category', // 取得 category.name 並命名為 category
+                'activity.start_time AS start_time',
+                'activity.end_time AS end_time'
+            ])
+            .getRawMany();
 
         if (!lowStocks || lowStocks.length === 0) {
             return responseSend(initResponseData(res, 1018));
@@ -104,14 +128,23 @@ export async function getComingSoon(req: JWTRequest, res: Response, next: NextFu
         const now = new Date();
         const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 三天後的日期
 
-        const comingSoons = await activityRepository.find({
-            select: ['id', 'name', 'cover_image', 'category_id', 'sales_start_time'],
-            order: { sales_start_time: 'ASC' },
-            where: {
-                sales_start_time: Between(now, threeDaysLater),
-                status: ActivityStatus.Published
-            }
-        });
+        const comingSoons = await activityRepository
+            .createQueryBuilder('activity')
+            .leftJoin('activity.category', 'category')
+            .where('activity.sales_start_time BETWEEN :now AND :threeDaysLater', {
+                now,
+                threeDaysLater
+            })
+            .andWhere('activity.status = :status', { status: ActivityStatus.Published })
+            .orderBy('activity.sales_start_time', 'ASC')
+            .select([
+                'activity.id AS id',
+                'activity.name AS name',
+                'activity.cover_image AS cover_image',
+                'category.name AS category', // 取得 category.name 並命名為 category
+                'activity.sales_start_time AS sales_start_time'
+            ])
+            .getRawMany();
 
         if (!comingSoons || comingSoons.length === 0) {
             return responseSend(initResponseData(res, 1018));
