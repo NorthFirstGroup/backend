@@ -14,11 +14,12 @@ import { ActivitySiteEntity } from '../entities/ActivitySite'
 import { OrganizerEntity } from '../entities/Organizer'
 import { isNotValidString, isNotValidInteger, isValidDateFormat, isNotValidUrl } from '../utils/validation'
 import { seatInventoryService } from '../utils/seatInventory';
-
+import { OrderEntity } from '../entities/Order'
+import { ActivityStatus } from '../enums/activity';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-tw';
-import { OrderEntity } from '../entities/Order'
+
 dayjs.locale('zh-tw');
 
 class CustomHttpError extends Error {
@@ -41,6 +42,12 @@ const ALLOWED_MIME_TYPES = {
     'image/gif': true
 } as const;
 type AllowedMimeTypes = keyof typeof ALLOWED_MIME_TYPES;
+
+export const NON_EDITABLE_ACTIVITY_STATUSES = [
+    ActivityStatus.Cancel,
+    ActivityStatus.Finish,
+  ];
+
 
 export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
     try {
@@ -201,17 +208,6 @@ export async function getActivityShowtimes(req: JWTRequest, res: Response, next:
             return 
         }
 
-        // const showtimes = await showtimeRepo.find({
-        //     where: {
-        //         activity_id: activity_id,
-        //     },
-        //     relations: [
-        //         'site',
-        //         'showtimeSections'
-        //     ],
-        //     order: { start_time: 'ASC' }
-        // });
-
         const showtimes = await dataSource
             .getRepository(ShowtimesEntity)
             .createQueryBuilder('showtime')
@@ -240,11 +236,6 @@ export async function getActivityShowtimes(req: JWTRequest, res: Response, next:
     }
 }
 
-// 訂單請求 Body 介面
-interface ShowtimeRequestBody {
-    start_at: string; // 'YYYY-MM-DD HH:mm'
-    site_id: string;  
-}
 // 新增活動場次
 export async function postActivityShowtime(req: JWTRequest, res: Response, next: NextFunction) {
     try {
@@ -252,9 +243,6 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
         const { start_at, site_id } = req.body as { site_id: string, start_at: string };
         const user = getAuthUser(req)
         const userId = user.id
-        // let showtime: ShowtimesEntity;
-        // // let site: ActivitySiteEntity;
-        // let zones: { section: string; capacity: number }[];
 
         // 
         if (isNotValidInteger(activity_id)) {
@@ -341,7 +329,7 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
                       newEnd: newEnd.toDate(),
                     }
                   )
-                  .getOne();            
+                .getOne();            
 
             if (showtimeExist) {
                 logger.error('該地點與時段已有其他場次，請選擇其他時間')
@@ -403,6 +391,26 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
         const user = getAuthUser(req)
         const userId = user.id
 
+        const showtimeRepo = dataSource.getRepository(ShowtimesEntity);
+        const sectionRepo = dataSource.getRepository(ShowtimeSectionsEntity);
+        
+        
+
+        if (isNotValidInteger(activity_id)) {
+            logger.error('活動Id格式錯誤')
+            responseSend(initResponseData(res, 1000))
+            return  
+        }
+        // 檢查日期格式
+        const format = 'YYYY-MM-DD HH:mm'
+        if (!isValidDateFormat(start_at, format)) {
+            responseSend(initResponseData(res, 1010))
+            return            
+        }
+
+        const newStart = dayjs(start_at, format);
+        const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        const formattedStartTime = newStart.toDate();        
         await dataSource.transaction(async (manager) => {
             const organizer = await manager.findOne(OrganizerEntity, {
                 where: {
@@ -434,7 +442,12 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
                 logger.error('無權限修改該活動')
                 responseSend(initResponseData(res, 3003))
                 return 
-            }       
+            }
+            // 檢查活動場次所屬的活動狀態
+            if (NON_EDITABLE_ACTIVITY_STATUSES.includes(activity.status)) {
+                logger.error('活動已取消或結束，禁止異動')
+                responseSend(initResponseData(res, 3003)); // 活動已取消或結束，禁止異動
+              }
 
             // 檢查場次是否存在
             const showtime = await manager
@@ -448,34 +461,110 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
                 logger.error('找不到此場次')
                 responseSend(initResponseData(res, 3004))
                 return             }            
-
-            // 檢查日期格式
-            if (!isValidDateFormat(start_at, 'YYYY-MM-DD HH:mm')) {
-                responseSend(initResponseData(res, 1010))
-                return            
-            }            
-
-
-            // 檢查該場次是否已開放售票或已有訂單
-
-
-            // 檢查場次時間是否衝突
-
-            // 檢查場地是否存在
-
-
             
-            // 
-            
-            
-            
+            // 檢查活動場地是否已建立
+            const site = await manager.findOne(ActivitySiteEntity, {
+                where: { id: site_id },
+              });
+              if (!site) {
+                  logger.error('活動場地尚未建立')
+                  responseSend(initResponseData(res, 3002))
+                  return 
+              }
 
-              
-        })
+            // 檢查場地是否為該活動所有
+            if (site.activity_id !== activity_id) {
+                logger.error('場地無效或與指定的活動不相符')
+                responseSend(initResponseData(res, 3005))
+                return 
+            }
+            // 檢查該場次是否已開放售票
+            if (activity.sales_start_time <= new Date()) {
+                logger.error('該場次已開放售票，無法修改')
+                responseSend(initResponseData(res, 3008)) 
+                return 
+              }
+            // 檢查是否已有訂單
+            const hasOrders = await manager
+              .createQueryBuilder(OrderEntity, 'order')
+              .where('order.showtime_id = :showtime_id', { showtime_id })
+              .getExists()
+        
+            if (hasOrders) {
+                logger.error('該場次已有成立的訂單，無法修改')
+                responseSend(initResponseData(res, 3009)) // 已有訂單，禁止更動
+            }
+
+            // 檢查場次時間是否有衝突, 場次的start_at 應介於 avtivity.start_time ~  avtivity.end_time
+            if (formattedStartTime < activity.start_time || formattedStartTime > activity.sales_end_time) {
+                logger.error('場次開始時間異常')
+                responseSend(initResponseData(res, 3006), logger);
+                return;
+            }
+
+            // 檢查場次的時間地點是否重複, 須排除本場次
+            const showtimeExist = await manager
+                .createQueryBuilder(ShowtimesEntity, 'showtime')
+                .where('showtime.site_id = :site_id', { site_id })
+                .andWhere('showtime.id != :showtime_id', { showtime_id }) // 排除目前場次
+                .andWhere(
+                    `showtime.start_time < :newEnd AND :newStart < showtime.start_time + interval '3 hours'`,
+                    {
+                      newStart: newStart.toDate(),
+                      newEnd: newEnd.toDate(),
+                    }
+                  )
+                .getOne();
+
+            if (showtimeExist) {
+                logger.error('該地點與時段已有其他場次，請選擇其他時間')
+                responseSend(initResponseData(res, 3007), logger);
+                return;                
+            }
+
+            // 更新場次資料
+            showtime.start_time = newStart.toDate();
+            showtime.site = site;
+
+            await showtimeRepo.save(showtime);
+
+            // 更新場次區域票價資料
+            const sections = site.prices.map((price) => {
+                const section = new ShowtimeSectionsEntity();
+                section.activity_id = activity_id;
+                section.site_id = site_id;
+                section.showtime_id = showtime_id;
+                section.section = price.section;
+                section.price = price.price;
+                section.capacity = price.capacity;
+                section.vacancy = price.capacity;
+                return section;
+              });
+
+            await sectionRepo.delete({
+                activity_id,
+                site_id,
+                showtime: { id: showtime.id },
+              });
+            await sectionRepo.save(sections);
+            
+            // redis 資料重新初始化
+            const zones = sections.map((section) => ({
+                section: section.section,
+                capacity: section.capacity!,
+              }));
+            try {
+                // 將新增場次寫入redis
+                await seatInventoryService.initializeActivitySeats(showtime.id, zones);
+            } catch (error) {
+                logger.warn(`寫入 Redis 失敗，但不影響資料庫：${(error as Error).message}`);         
+            }
+            
+        });
 
         
-
-        responseSend(initResponseData(res, 2000))
+        logger.info('活動場次更新成功');
+        responseSend(initResponseData(res, 2000, undefined, '活動場次更新成功'))
     } catch (error) {
         logger.error('更新活動場次錯誤:', error)
         next(error)
