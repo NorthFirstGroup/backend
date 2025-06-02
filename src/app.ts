@@ -2,8 +2,8 @@ import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import pinoHttp from 'pino-http';
-import getLogger from './utils/logger';
-import responseSend, { initResponseData } from './utils/serverResponse';
+import getLogger from '@utils/logger';
+import responseSend, { CustomError, initResponseData } from '@utils/serverResponse';
 import v1Router from '@routes/v1/v1Router';
 import v2Router from '@routes/v2/v2Router';
 
@@ -41,12 +41,10 @@ app.use('/api/v1/', v1Router);
 app.use('/api/v2/', v2Router);
 
 // 全域錯誤處理中介層
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: { code?: number }, req: Request, res: Response, next: NextFunction) => {
+app.use((err: CustomError, req: Request, res: Response, _next: NextFunction) => {
     req.log.error(err);
-
     if (err.code) {
-        responseSend(initResponseData(res, err.code));
+        responseSend(initResponseData(res, err.code, err.data, err.message));
     } else {
         responseSend(initResponseData(res, 5555));
     }
