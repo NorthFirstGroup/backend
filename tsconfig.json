@@ -8,7 +8,8 @@
             "@entities/*": ["./entities/*"],
             "@constants/*": ["./constants/*"],
             "@middlewares/*": ["./middlewares/*"],
-            "@utils/*": ["./utils/*"]
+            "@utils/*": ["./utils/*"],
+            "@db/*": ["./db/*"]
         },
         /* 專案 */
         // "incremental": true,                              /* 儲存 .tsbuildinfo 檔案以允許專案的增量編譯。 */

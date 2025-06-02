@@ -1,15 +1,15 @@
 // 活動場次資料表
 
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
-  Index,
-  OneToMany
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToOne,
+    JoinColumn,
+    Index,
+    OneToMany
 } from 'typeorm';
 import { ActivityEntity } from './Activity';
 import { ActivitySiteEntity } from './ActivitySite';
@@ -17,7 +17,6 @@ import { ShowtimeSectionsEntity } from './ShowtimeSections';
 
 import { DbEntity } from '../constants/dbEntity';
 import { OrderEntity } from './Order';
-
 
 @Entity(DbEntity.Showtimes)
 export class ShowtimesEntity {
@@ -66,7 +65,5 @@ export class ShowtimesEntity {
 
     /** 一場次有多個張訂單 */
     @OneToMany(() => OrderEntity, order => order.showtime)
-    orders!: OrderEntity[];
+    orders!: Promise<OrderEntity[]>;
 }
-
-

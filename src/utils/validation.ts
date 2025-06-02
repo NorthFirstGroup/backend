@@ -2,8 +2,8 @@ import { validate } from 'uuid';
 import dayjs from 'dayjs';
 import { CustomError, RespStatusCode } from './serverResponse';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { dataSource } from '@/db/data-source';
-import { AreaEntity } from '@/entities/Area';
+import { dataSource } from '@db/data-source';
+import { AreaEntity } from '@entities/Area';
 dayjs.extend(customParseFormat);
 
 /** 檢查值是否為無效的字串。
