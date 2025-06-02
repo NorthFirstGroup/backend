@@ -105,6 +105,9 @@ export async function getShowtimeAll(req: JWTRequest, res: Response, next: NextF
 
         // 取得所有場次資料
         const showtimes = await showtimesRepository.find({
+            where: {
+                activity_id: req.params.activity_id
+            },
             relations: {
                 site: true,
                 showtimeSections: true
