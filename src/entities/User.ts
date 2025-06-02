@@ -1,6 +1,17 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
-import { AreaEntity } from './Area'
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToMany,
+    JoinTable,
+    OneToMany,
+    OneToOne
+} from 'typeorm';
+import { AreaEntity } from './Area';
 import { OrderEntity } from './Order';
+import { OrganizerEntity } from './Organizer';
 
 /** 使用者角色類型 */
 export enum UserRole {
@@ -9,11 +20,11 @@ export enum UserRole {
     /** 活動廠商 */
     ORGANIZER = 'ORGANIZER',
     /** 管理者 */
-    ADMIN = 'ADMIN',
+    ADMIN = 'ADMIN'
 }
 
 /** 資料庫用的 Entity 名稱 */
-export const dbEntityNameUser = 'User'
+export const dbEntityNameUser = 'User';
 
 @Entity(dbEntityNameUser)
 export class UserEntity {
@@ -69,11 +80,14 @@ export class UserEntity {
     @JoinTable({
         name: 'User_Area',
         joinColumn: { name: 'user_id', referencedColumnName: 'id' },
-        inverseJoinColumn: { name: 'area_id', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'area_id', referencedColumnName: 'id' }
     })
     location_ids!: AreaEntity[];
 
     /** 一個用戶有多個訂單 */
     @OneToMany(() => OrderEntity, order => order.user)
     orders!: OrderEntity[];
+
+    @OneToOne(() => OrganizerEntity, organizer => organizer.user)
+    organizer?: Promise<OrganizerEntity>;
 }

@@ -2,24 +2,23 @@
 // 補: 活動與ActivitySite跟Showtimes會有一對多的關係
 
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
-  ManyToOne, // 如果 organizer_id 和 category_id 是實際的關聯外鍵
-  JoinColumn,
-  OneToMany, // 如果有其他表與此表形成一對多關聯，例如活動的場次
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    Index,
+    ManyToOne, // 如果 organizer_id 和 category_id 是實際的關聯外鍵
+    JoinColumn,
+    OneToMany // 如果有其他表與此表形成一對多關聯，例如活動的場次
 } from 'typeorm';
-import { ActivityTypeEntity } from './ActivityType'
-import { OrganizerEntity } from './Organizer'
+import { ActivityTypeEntity } from './ActivityType';
+import { OrganizerEntity } from './Organizer';
 import { ActivitySiteEntity } from './ActivitySite';
 import { ShowtimesEntity } from './Showtimes';
 import { ShowtimeSectionsEntity } from './ShowtimeSections';
 
 import { DbEntity } from '../constants/dbEntity';
-
 
 @Entity(DbEntity.Activity)
 export class ActivityEntity {
@@ -61,7 +60,7 @@ export class ActivityEntity {
 
     @Column({ type: 'text', nullable: true })
     banner_image?: string;
-    
+
     @Column({ type: 'varchar', array: true, nullable: true })
     tags?: string[];
 
@@ -76,10 +75,10 @@ export class ActivityEntity {
     is_deleted!: boolean;
 
     // 關聯至 Organizer
-    @ManyToOne(() => OrganizerEntity,  organizer => organizer.activity)
+    @ManyToOne(() => OrganizerEntity, organizer => organizer.activities)
     @JoinColumn({ name: 'organizer_id', referencedColumnName: 'id' })
     organizer!: OrganizerEntity;
-    
+
     // 關聯至 ActivityType
     @ManyToOne(() => ActivityTypeEntity)
     @JoinColumn({ name: 'category_id', referencedColumnName: 'id' })
@@ -95,8 +94,4 @@ export class ActivityEntity {
 
     @OneToMany(() => ShowtimeSectionsEntity, section => section.activity)
     showtimeSections!: ShowtimeSectionsEntity[];
-
 }
-
-
-

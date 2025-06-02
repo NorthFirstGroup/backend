@@ -1,5 +1,24 @@
-import { Response } from 'express'
-import { Logger } from 'pino'
+import e, { Response } from 'express';
+import { Logger } from 'pino';
+
+export enum RespStatusCode {
+    OK = 2000, // 成功
+    FIELD_ERROR = 1000, // 欄位未填寫正確
+    UPDATE_FAILED = 1002, // 更新失敗
+    INVALID_DATE = 1010, // 無效日期
+    NOT_LOGGED_IN = 1015, // 請先登入
+    NOT_ORGANIZER = 1016, // 使用者尚未成為廠商
+    AREA_ID_NOT_EXIST = 1021, // 區域ID 不存在
+    INVALID_ACTIVITY_ID = 1603, // 活動 ID 無效或已刪除
+    INVALID_SITE_ID = 1604, // 場次 ID 無效或不屬於該活動
+
+    ACTIVITY_NOT_CREATED = 3001, // 活動尚未建立
+    NO_PERMISSION = 3003, // 無權限
+    DELETE_FAILED = 3006, // 刪除失敗
+    SERVER_ERROR = 5555, // 伺服器錯誤
+
+    INVALID_REQUEST = 9001 // 無效請求
+}
 
 /** 狀態碼與對應的訊息 */
 const codeMessageMap: Record<number, string> = {
@@ -26,12 +45,7 @@ const codeMessageMap: Record<number, string> = {
     1018: '查無清單資料',
     1019: '廠商不存在或尚未通過驗證',
     1020: '已申請過廠商',
-
-    3001: '活動尚未建立',
-    3002: '活動場地尚未建立',
-    3003: '無權限修改',
-    3004: '無此場次或不屬於該活動',
-    3005: '提供的 site_id 無效或不屬於該活動',
+    1021: '區域ID 不存在',
 
     //建立訂單
     1601: '票券數量超過上限 (最多4筆)',
@@ -53,68 +67,94 @@ const codeMessageMap: Record<number, string> = {
     //取得個人訂單資訊列表
     1622: '無效的排序欄位',
     1623: '排序順序 (order) 必須是 "asc" 或 "desc"',
-
     //取得票券詳細資訊
     1624: '找不到指定的票券或您沒有權限查看此票券',
+
+    3001: '活動尚未建立',
+    3002: '活動場地尚未建立',
+    3003: '無權限查看或修改',
+    3004: '無此場次或不屬於該活動',
+    3005: '提供的 site_id 無效或不屬於該活動',
+    3006: '場次開始時間超出允許範圍',
+    3007: '該地點與時段已有其他場次',
+    3008: '該場次已開放售票，無法修改',
+    3009: '該場次已有成立的訂單，無法修改',
+    3010: '該活動已取消或結束，禁止異動',
 
     5555: '伺服器錯誤',
     5601: '服務器錯誤：座位服務未準備好',
     5602: '內部服務器錯誤：座位庫存數據異常',
-}
+
+    9001: '無效請求'
+};
 
 /** 回應資料格式 */
 export interface ResponseData {
     /** Express 的回應物件 */
-    res: Response
+    res: Response;
     /** 狀態碼，對應 codeMessageMap */
-    code: number
+    code: number;
     /** 要回傳的內容 */
-    data?: object
+    data?: object;
     /** 可選的自訂訊息 */
-    message?: string
+    message?: string;
 }
 
 /** 初始回應資料 */
-export const initResponseData = (
-    res: Response,
-    code: number,
-    data?: object,
-    message?: string
-): ResponseData => ({ res, code, data, message })
+export const initResponseData = (res: Response, code?: number, data?: object, message?: string): ResponseData => ({
+    res,
+    code: code || 2000,
+    data,
+    message: message
+});
 
 /** 根據 HTTP 狀態碼格式化回應資料並送出，並在錯誤情況下使用 logger 記錄。
  * @param resData - 回應資料
  * @param logger - 可選的 logger 物件
  */
 export default function responseSend(resData: ResponseData, logger?: Logger) {
-    const { res, code, data, message } = resData
+    const { res, code, data, message } = resData;
 
-    if (!res) return
+    if (!res) return;
 
     const responseData: {
-        status_code: number
-        data?: object
-        message: string
+        status_code: number;
+        data?: object;
+        message: string;
     } = {
         status_code: code,
-        message: message ?? codeMessageMap[code] ?? '未知錯誤',
-    }
+        message: (message || codeMessageMap[code]) ?? '未知錯誤'
+    };
 
     if (responseData.status_code === 2000) {
-        if (data && typeof data === 'object') responseData.data = data
+        if (data && typeof data === 'object') responseData.data = data;
     } else if (logger) {
-        logger.warn(data)
+        logger.warn(data);
     }
-
-        switch (code) {
+    switch (code) {
         case 2000:
-            res.status(200).json(responseData)
-            break
+            res.status(200).json(responseData);
+            break;
         case 5555:
-            res.status(500).json(responseData)
-            break
+            res.status(500).json(responseData);
+            break;
         default:
-            res.status(400).json(responseData)
-            break
+            res.status(400).json(responseData);
+            break;
+    }
+}
+
+export class CustomError extends Error {
+    httpStatus: number = 500;
+    message: string;
+    code: number = RespStatusCode.SERVER_ERROR;
+    data: any;
+
+    constructor(statusCode?: number, serverMessage?: string, httpStatus?: number, data?: any) {
+        super();
+        this.httpStatus = httpStatus || 500;
+        this.code = statusCode || RespStatusCode.SERVER_ERROR;
+        this.message = serverMessage || codeMessageMap[this.code] || '伺服器錯誤';
+        this.data = data;
     }
 }

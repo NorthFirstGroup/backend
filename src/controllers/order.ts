@@ -34,7 +34,7 @@ interface OrderRequestBody {
     tickets: TicketInput[];
 }
 
-function _validateOrderNumber(orderNumber: string): boolean {
+function validateOrderNumber(orderNumber: string): boolean {
     // 1. Check total length and format
     if (!/^\d{13}$/.test(orderNumber)) { // YYYYMMDD (8 digits) + SSSSS (5 digits) = 13 digits
         return false; // 必須是 13 位數字
@@ -256,6 +256,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         // 5. 建立訂單
         const orderRepository = queryRunner.manager.getRepository(OrderEntity);
         const orderTicketRepository = queryRunner.manager.getRepository(OrderTicketEntity);
+        const ticketRepository = queryRunner.manager.getRepository(TicketEntity);
 
         const newOrder = new OrderEntity();
         newOrder.user_id = id;
@@ -269,7 +270,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         newOrder.pickup_status = PickupStatus.NOT_PICKED_UP;
 
         const savedOrder = await orderRepository.save(newOrder);
-        logger.info(`saved orderRepository`)
+        logger.info(`saved orderRepository ${savedOrder.id}`)
 
         const orderTicketsToSave: OrderTicketEntity[] = orderTicketsDetails.map(detail  => {
             const orderTicket = new OrderTicketEntity();
@@ -283,8 +284,39 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
 
         // console.log(JSON.stringify(orderTicketsToSave));
 
-        await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
-        // logger.info(`saved orderTicketRepository`)
+        const savedOrderTickets = await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
+        logger.info(`saved orderTicketRepository: ${savedOrderTickets.length} entries created.`)
+
+        const ticketsToSave: TicketEntity[] = [];
+        for (const savedOrderTicket of savedOrderTickets) {
+            const sectionDetail = successfullyDeductedTickets.find(
+                deducted => deducted.sectionDetail.id === savedOrderTicket.section_id
+            )?.sectionDetail;
+
+            if (!sectionDetail) {
+                logger.error(`找不到對應的 ShowtimeSectionEntity for section_id: ${savedOrderTicket.section_id}`);
+                throw new Error('Associated section detail not found for order ticket.');
+            }
+
+            for (let i = 0; i < savedOrderTicket.quantity; i++) {
+                const ticket = new TicketEntity();
+                ticket.order_id = savedOrder.id;
+                ticket.order_ticket_id = savedOrderTicket.id;
+                ticket.order_number = newOrderNumber;
+                ticket.section = sectionDetail.section;
+                ticket.price = sectionDetail.price!;
+                // 生成唯一的票券代碼
+                ticket.ticket_code = `${newOrderNumber}-${sectionDetail.section}-${i + 1}`;
+                ticket.status = 0; // 預設為未使用
+                // 生成電子憑證連結
+                //ticket.certificate_url = `https://your-ticket-platform.com/certificate/${ticket.ticket_code}`;
+                ticket.certificate_url = '';
+                ticketsToSave.push(ticket);
+            }
+        }
+
+        await ticketRepository.save(ticketsToSave); // 批次儲存所有單張票券
+        logger.info(`saved ticketRepository: ${ticketsToSave.length} tickets created.`);
 
         // 如果所有資料庫操作都成功，提交事務(原子操作)
         await queryRunner.commitTransaction();
@@ -292,7 +324,8 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
 
         // 訂單建立成功
         responseSend(initResponseData(res, 2000, {
-            order_id: savedOrder.order_number
+            order_number: savedOrder.order_number
+            // order_id: savedOrder.id
         }), logger);
 
     } catch (error) {
@@ -360,17 +393,18 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
 export async function getOrderDetail(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id:userId } = getAuthUser(req)
-        const { order_id } = req.params
+        const { order_number } = req.params
 
-        if (typeof order_id !== 'string' || order_id.length === 0) {
+        if (typeof order_number !== 'string' || order_number.length === 0 || !validateOrderNumber(order_number)) {
             responseSend(initResponseData(res, 1000), logger);
             return;
         }
+
         // 取得資料
         const orderRepository = dataSource.getRepository(OrderEntity)
 
         const order = await orderRepository.findOne({
-            where: { id: parseInt(order_id), user_id: userId },
+            where: { order_number: order_number, user_id: userId },
             relations: [
                 'showtime',
                 'showtime.activity',
@@ -406,7 +440,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
 
         const responseData = initResponseData(res, 2000)
         responseData.data = {
-            orderId: order_id,
+            // orderId: order_id,
             orderNumber: order.order_number,
             eventName: order.showtime.activity.name,
             eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
@@ -432,7 +466,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
 }
 
 interface OrderListItem {
-    orderId: number;
+    // orderId: number;
     orderNumber: string;
     eventName: string;
     eventDate: string;
@@ -516,7 +550,7 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
             }));
 
             return {
-                orderId: order.id,
+                // orderId: order.id,
                 orderNumber: order.order_number,
                 eventName: order.showtime.activity.name,
                 eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,

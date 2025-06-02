@@ -1,23 +1,23 @@
-import { 
-    Entity, 
+import {
+    Entity,
     PrimaryGeneratedColumn,
-    Column, 
-    CreateDateColumn, 
-    UpdateDateColumn, 
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
     OneToOne,
     JoinColumn,
     Index,
     OneToMany
-  } from 'typeorm';
+} from 'typeorm';
 import { DbEntity } from '../constants/dbEntity';
-import { UserEntity } from './User'
-import { ActivityEntity } from './Activity'
+import { UserEntity } from './User';
+import { ActivityEntity } from './Activity';
 
 /** 廠商資料表 */
 @Entity(DbEntity.Organizer)
 export class OrganizerEntity {
     @PrimaryGeneratedColumn('uuid')
-    id!: string
+    id!: string;
     /** 廠商名稱 */
     @Column({ type: 'varchar', length: 100, nullable: false })
     name!: string;
@@ -27,7 +27,7 @@ export class OrganizerEntity {
     user_id!: string;
 
     /** 審核狀態 */
-    @Column({ type: 'smallint', default: 1, nullable: false})
+    @Column({ type: 'smallint', default: 1, nullable: false })
     status!: number;
 
     /** 統一編號 */
@@ -56,7 +56,7 @@ export class OrganizerEntity {
     updated_at!: Date;
 
     /** 軟刪除標記 */
-    @Column({ type: 'boolean', default: false, nullable: false})
+    @Column({ type: 'boolean', default: false, nullable: false })
     is_deleted!: boolean;
 
     // 與 User 的一對一關聯
@@ -66,9 +66,5 @@ export class OrganizerEntity {
 
     // 🔁 多個活動關聯
     @OneToMany(() => ActivityEntity, activity => activity.organizer)
-    activity!: ActivityEntity[];
-
-
+    activities!: ActivityEntity[];
 }
-
-

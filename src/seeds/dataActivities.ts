@@ -5,6 +5,7 @@ export const activityIds = [
     1,
     2,
     3,
+    4,
 ];
 
 export const activitySiteIds = [
@@ -14,6 +15,7 @@ export const activitySiteIds = [
     '11111111-1111-1111-3333-111111111114',
     '11111111-1111-1111-3333-111111111115',
     '11111111-1111-1111-3333-111111111116',
+    '11111111-1111-1111-3333-111111111117',
 ];
 
 export const showtimeIds = [
@@ -23,6 +25,7 @@ export const showtimeIds = [
     '11111111-1111-1111-4444-111111111114',
     '11111111-1111-1111-4444-111111111115',
     '11111111-1111-1111-4444-111111111116',
+    '11111111-1111-1111-4444-111111111117',
 ];
 
 export const showtimeSectionIds = [
@@ -44,6 +47,8 @@ export const showtimeSectionIds = [
     '11111111-1111-1111-5555-111111111126',
     '11111111-1111-1111-5555-111111111127',
     '11111111-1111-1111-5555-111111111128',
+    '11111111-1111-1111-5555-111111111129',
+    '11111111-1111-1111-5555-111111111130',
 ];
 
 // status - 1:未上架, 2:已上架, 3:取消, 4:結束
@@ -90,6 +95,21 @@ export const activities = [
         end_time: '2025-07-05 12:00+08',
         sales_start_time: '2025-05-01 12:00+08',
         sales_end_time: '2025-07-05 12:00+08',
+        cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
+        banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
+    },
+    {
+        id: activityIds[3],
+        name: '蘇打綠《二十年一刻》巡迴演唱會',
+        organizer_id: organizerIds[0],
+        category_id: 9,
+        status: ActivityStatus.Published,
+        description: '測試活動',
+        information: '活動資訊',
+        start_time: '2025-08-01 12:00+08',
+        end_time: '2025-08-15 12:00+08',
+        sales_start_time: '2025-07-01 12:00+08',
+        sales_end_time: '2025-08-15 12:00+08',
         cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
         banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
     },
@@ -180,6 +200,19 @@ export const activitySites = [
             { section: 'C區', price: 1800, capacity: 3000 },
         ],
     },
+    {
+        id: activitySiteIds[6],
+        activity_id: activityIds[3],
+        area_id: 15,
+        name: '高雄巨蛋',
+        address: '高雄市前鎮區成功二路2號',
+        seating_map_url: '',
+        seat_capacity: 12000,
+        prices: [
+            { section: '特一區', price: 5380, capacity: 2500 },
+            { section: '特二區', price: 4980, capacity: 2500 },
+        ],
+    },
 ];
 
 export const showtimes = [
@@ -223,6 +256,13 @@ export const showtimes = [
         site_id: activitySiteIds[5],
         activity_id: activityIds[2],
         start_time: '2025-07-05 12:00+08',
+        seat_image: '',
+    },
+    {
+        id: showtimeIds[6],
+        site_id: activitySiteIds[6],
+        activity_id: activityIds[3],
+        start_time: '2025-08-01 12:00+08',
         seat_image: '',
     },
 ];
@@ -407,5 +447,25 @@ export const showtimeSections = [
         price: 1800,
         capacity: 3000,
         vacancy: 2999, // 假設有1張已售出
+    },
+    {
+        id: showtimeSectionIds[18],
+        showtime_id: showtimeIds[6],
+        site_id: activitySiteIds[6],
+        activity_id: activityIds[3],
+        section: '特一區',
+        price: 5380,
+        capacity: 2500,
+        vacancy: 2500, // 
+    },
+    {
+        id: showtimeSectionIds[19],
+        showtime_id: showtimeIds[6],
+        site_id: activitySiteIds[6],
+        activity_id: activityIds[3],
+        section: '特二區',
+        price: 4980,
+        capacity: 2500,
+        vacancy: 2500, // 
     },
 ];
