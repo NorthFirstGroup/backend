@@ -1,7 +1,7 @@
-import { dataSource } from '../db/data-source'
-import { redis } from '../db/redis-source'
+import { dataSource } from '../db/data-source';
+import { redis } from '../db/redis-source';
 import { showtimes } from './dataActivities';
-import { initRedisShowtimeInventory } from '../scripts/init-redis-inventtory'
+import { initRedisShowtimeInventory } from '../scripts/init-redis-inventtory';
 
 export async function resetTable(tableName: string) {
     await dataSource.initialize();
@@ -68,10 +68,9 @@ export async function runSeedRedisScript() {
             throw new Error('Redis connection failed. Aborting redis seed.');
         }
 
-        await Promise.all(showtimes.map( showtime => initRedisShowtimeInventory(showtime.id)));
+        await Promise.all(showtimes.map(showtime => initRedisShowtimeInventory(showtime.id)));
 
         console.log('All Redis showtime inventories initialized successfully.');
-
     } catch (error) {
         console.log('Seeding process failed:', error);
     } finally {

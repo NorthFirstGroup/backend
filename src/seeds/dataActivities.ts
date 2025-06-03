@@ -1,12 +1,7 @@
-import { organizerIds } from './dataUsers'
-import { ActivityStatus } from "../enums/activity"
+import { organizerIds } from './dataUsers';
+import { ActivityStatus } from '../enums/activity';
 
-export const activityIds = [
-    1,
-    2,
-    3,
-    4,
-];
+export const activityIds = [1, 2, 3, 4];
 
 export const activitySiteIds = [
     '11111111-1111-1111-3333-111111111111',
@@ -15,7 +10,7 @@ export const activitySiteIds = [
     '11111111-1111-1111-3333-111111111114',
     '11111111-1111-1111-3333-111111111115',
     '11111111-1111-1111-3333-111111111116',
-    '11111111-1111-1111-3333-111111111117',
+    '11111111-1111-1111-3333-111111111117'
 ];
 
 export const showtimeIds = [
@@ -25,7 +20,7 @@ export const showtimeIds = [
     '11111111-1111-1111-4444-111111111114',
     '11111111-1111-1111-4444-111111111115',
     '11111111-1111-1111-4444-111111111116',
-    '11111111-1111-1111-4444-111111111117',
+    '11111111-1111-1111-4444-111111111117'
 ];
 
 export const showtimeSectionIds = [
@@ -48,7 +43,7 @@ export const showtimeSectionIds = [
     '11111111-1111-1111-5555-111111111127',
     '11111111-1111-1111-5555-111111111128',
     '11111111-1111-1111-5555-111111111129',
-    '11111111-1111-1111-5555-111111111130',
+    '11111111-1111-1111-5555-111111111130'
 ];
 
 // status - 1:未上架, 2:已上架, 3:取消, 4:結束
@@ -65,8 +60,10 @@ export const activities = [
         end_time: '2025-07-26 17:00+08',
         sales_start_time: '2025-05-20 12:00+08',
         sales_end_time: '2025-07-31 12:00+08',
-        cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/15f4d8bd-459e-45a0-ba31-b887674dff04.png',
-        banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/15f4d8bd-459e-45a0-ba31-b887674dff04.png',
+        cover_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/15f4d8bd-459e-45a0-ba31-b887674dff04.png',
+        banner_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/15f4d8bd-459e-45a0-ba31-b887674dff04.png'
     },
     {
         id: activityIds[1],
@@ -80,8 +77,10 @@ export const activities = [
         end_time: '2025-07-19 17:00+08',
         sales_start_time: '2025-06-01 12:00+08',
         sales_end_time: '2025-07-19 17:00+08',
-        cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/9e2d7cf2-52ed-4404-85fc-f64ec8cf6ca8.png',
-        banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/9e2d7cf2-52ed-4404-85fc-f64ec8cf6ca8.png',
+        cover_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/9e2d7cf2-52ed-4404-85fc-f64ec8cf6ca8.png',
+        banner_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/9e2d7cf2-52ed-4404-85fc-f64ec8cf6ca8.png'
     },
     {
         id: activityIds[2],
@@ -95,8 +94,10 @@ export const activities = [
         end_time: '2025-07-05 12:00+08',
         sales_start_time: '2025-05-01 12:00+08',
         sales_end_time: '2025-07-05 12:00+08',
-        cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
-        banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
+        cover_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
+        banner_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png'
     },
     {
         id: activityIds[3],
@@ -110,9 +111,11 @@ export const activities = [
         end_time: '2025-08-15 12:00+08',
         sales_start_time: '2025-07-01 12:00+08',
         sales_end_time: '2025-08-15 12:00+08',
-        cover_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
-        banner_image: 'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
-    },
+        cover_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png',
+        banner_image:
+            'https://goticket-bucket.s3.ap-northeast-1.amazonaws.com/public/images/29c72a6c-14c1-439f-be2e-32c083ebfa3d.png'
+    }
 ];
 
 export const activitySites = [
@@ -127,8 +130,8 @@ export const activitySites = [
         prices: [
             { section: 'A區', price: 2000, capacity: 5000 },
             { section: 'B區', price: 1500, capacity: 3000 },
-            { section: 'C區', price: 1000, capacity: 2000 },
-        ],
+            { section: 'C區', price: 1000, capacity: 2000 }
+        ]
     },
     {
         id: activitySiteIds[1],
@@ -141,8 +144,8 @@ export const activitySites = [
         prices: [
             { section: 'A區', price: 2500, capacity: 6000 },
             { section: 'B區', price: 2000, capacity: 4000 },
-            { section: 'C區', price: 1500, capacity: 5000 },
-        ],
+            { section: 'C區', price: 1500, capacity: 5000 }
+        ]
     },
     {
         id: activitySiteIds[2],
@@ -155,8 +158,8 @@ export const activitySites = [
         prices: [
             { section: 'A區', price: 2200, capacity: 5500 },
             { section: 'B區', price: 1800, capacity: 3500 },
-            { section: 'C區', price: 1300, capacity: 3000 },
-        ],
+            { section: 'C區', price: 1300, capacity: 3000 }
+        ]
     },
     {
         id: activitySiteIds[3],
@@ -169,8 +172,8 @@ export const activitySites = [
         prices: [
             { section: 'A區', price: 3000, capacity: 5000 },
             { section: 'B區', price: 2500, capacity: 3000 },
-            { section: 'C區', price: 2000, capacity: 2000 },
-        ],
+            { section: 'C區', price: 2000, capacity: 2000 }
+        ]
     },
     {
         id: activitySiteIds[4],
@@ -183,8 +186,8 @@ export const activitySites = [
         prices: [
             { section: 'A區', price: 3500, capacity: 6000 },
             { section: 'B區', price: 3000, capacity: 4000 },
-            { section: 'C區', price: 2500, capacity: 5000 },
-        ],
+            { section: 'C區', price: 2500, capacity: 5000 }
+        ]
     },
     {
         id: activitySiteIds[5],
@@ -197,8 +200,8 @@ export const activitySites = [
         prices: [
             { section: 'A區', price: 2800, capacity: 5500 },
             { section: 'B區', price: 2300, capacity: 3500 },
-            { section: 'C區', price: 1800, capacity: 3000 },
-        ],
+            { section: 'C區', price: 1800, capacity: 3000 }
+        ]
     },
     {
         id: activitySiteIds[6],
@@ -210,9 +213,9 @@ export const activitySites = [
         seat_capacity: 12000,
         prices: [
             { section: '特一區', price: 5380, capacity: 2500 },
-            { section: '特二區', price: 4980, capacity: 2500 },
-        ],
-    },
+            { section: '特二區', price: 4980, capacity: 2500 }
+        ]
+    }
 ];
 
 export const showtimes = [
@@ -221,50 +224,50 @@ export const showtimes = [
         site_id: activitySiteIds[0],
         activity_id: activityIds[0],
         start_time: '2025-07-19 17:00+08',
-        seat_image: '',
+        seat_image: ''
     },
     {
         id: showtimeIds[1],
         site_id: activitySiteIds[1],
         activity_id: activityIds[0],
         start_time: '2025-07-20 17:00+08',
-        seat_image: '',
+        seat_image: ''
     },
     {
         id: showtimeIds[2],
         site_id: activitySiteIds[2],
         activity_id: activityIds[0],
         start_time: '2025-07-26 17:00+08',
-        seat_image: '',
+        seat_image: ''
     },
     {
         id: showtimeIds[3],
         site_id: activitySiteIds[3],
         activity_id: activityIds[1],
         start_time: '2025-07-19 17:00+08',
-        seat_image: '',
+        seat_image: ''
     },
     {
         id: showtimeIds[4],
         site_id: activitySiteIds[4],
         activity_id: activityIds[1],
         start_time: '2025-07-12 12:00+08',
-        seat_image: '',
+        seat_image: ''
     },
     {
         id: showtimeIds[5],
         site_id: activitySiteIds[5],
         activity_id: activityIds[2],
         start_time: '2025-07-05 12:00+08',
-        seat_image: '',
+        seat_image: ''
     },
     {
         id: showtimeIds[6],
         site_id: activitySiteIds[6],
         activity_id: activityIds[3],
         start_time: '2025-08-01 12:00+08',
-        seat_image: '',
-    },
+        seat_image: ''
+    }
 ];
 
 export const showtimeSections = [
@@ -276,7 +279,7 @@ export const showtimeSections = [
         section: 'A區',
         price: 2000,
         capacity: 5000,
-        vacancy: 4998, // 假設有2張已售出
+        vacancy: 4998 // 假設有2張已售出
     },
     {
         id: showtimeSectionIds[1],
@@ -286,7 +289,7 @@ export const showtimeSections = [
         section: 'B區',
         price: 1500,
         capacity: 3000,
-        vacancy: 3000,
+        vacancy: 3000
     },
     {
         id: showtimeSectionIds[2],
@@ -296,7 +299,7 @@ export const showtimeSections = [
         section: 'C區',
         price: 1000,
         capacity: 2000,
-        vacancy: 2000,
+        vacancy: 2000
     },
     {
         id: showtimeSectionIds[3],
@@ -306,7 +309,7 @@ export const showtimeSections = [
         section: 'A區',
         price: 2500,
         capacity: 6000,
-        vacancy: 5998, // 假設有2張已售出
+        vacancy: 5998 // 假設有2張已售出
     },
     {
         id: showtimeSectionIds[4],
@@ -316,7 +319,7 @@ export const showtimeSections = [
         section: 'B區',
         price: 2000,
         capacity: 4000,
-        vacancy: 3998, // 假設有2張已售出
+        vacancy: 3998 // 假設有2張已售出
     },
     {
         id: showtimeSectionIds[5],
@@ -326,7 +329,7 @@ export const showtimeSections = [
         section: 'C區',
         price: 1500,
         capacity: 3000,
-        vacancy: 2996, // 假設有4張已售出
+        vacancy: 2996 // 假設有4張已售出
     },
     {
         id: showtimeSectionIds[6],
@@ -336,7 +339,7 @@ export const showtimeSections = [
         section: 'A區',
         price: 2200,
         capacity: 5500,
-        vacancy: 5500,
+        vacancy: 5500
     },
     {
         id: showtimeSectionIds[7],
@@ -346,7 +349,7 @@ export const showtimeSections = [
         section: 'B區',
         price: 1800,
         capacity: 3500,
-        vacancy: 3500,
+        vacancy: 3500
     },
     {
         id: showtimeSectionIds[8],
@@ -356,7 +359,7 @@ export const showtimeSections = [
         section: 'C區',
         price: 1300,
         capacity: 3000,
-        vacancy: 3000,
+        vacancy: 3000
     },
     {
         id: showtimeSectionIds[9],
@@ -366,7 +369,7 @@ export const showtimeSections = [
         section: 'A區',
         price: 3000,
         capacity: 5000,
-        vacancy: 5000,
+        vacancy: 5000
     },
     {
         id: showtimeSectionIds[10],
@@ -376,7 +379,7 @@ export const showtimeSections = [
         section: 'B區',
         price: 2500,
         capacity: 3000,
-        vacancy: 2998, // 假設有2張已售出
+        vacancy: 2998 // 假設有2張已售出
     },
     {
         id: showtimeSectionIds[11],
@@ -386,7 +389,7 @@ export const showtimeSections = [
         section: 'C區',
         price: 2000,
         capacity: 2000,
-        vacancy: 2000,
+        vacancy: 2000
     },
     {
         id: showtimeSectionIds[12],
@@ -396,7 +399,7 @@ export const showtimeSections = [
         section: 'A區',
         price: 3500,
         capacity: 6000,
-        vacancy: 6000,
+        vacancy: 6000
     },
     {
         id: showtimeSectionIds[13],
@@ -406,7 +409,7 @@ export const showtimeSections = [
         section: 'B區',
         price: 3000,
         capacity: 4000,
-        vacancy: 4000,
+        vacancy: 4000
     },
     {
         id: showtimeSectionIds[14],
@@ -416,7 +419,7 @@ export const showtimeSections = [
         section: 'C區',
         price: 2500,
         capacity: 5000,
-        vacancy: 5000,
+        vacancy: 5000
     },
     {
         id: showtimeSectionIds[15],
@@ -426,7 +429,7 @@ export const showtimeSections = [
         section: 'A區',
         price: 2800,
         capacity: 5500,
-        vacancy: 5500,
+        vacancy: 5500
     },
     {
         id: showtimeSectionIds[16],
@@ -436,7 +439,7 @@ export const showtimeSections = [
         section: 'B區',
         price: 2300,
         capacity: 3500,
-        vacancy: 3500,
+        vacancy: 3500
     },
     {
         id: showtimeSectionIds[17],
@@ -446,7 +449,7 @@ export const showtimeSections = [
         section: 'C區',
         price: 1800,
         capacity: 3000,
-        vacancy: 2999, // 假設有1張已售出
+        vacancy: 2999 // 假設有1張已售出
     },
     {
         id: showtimeSectionIds[18],
@@ -456,7 +459,7 @@ export const showtimeSections = [
         section: '特一區',
         price: 5380,
         capacity: 2500,
-        vacancy: 2500, // 
+        vacancy: 2500 //
     },
     {
         id: showtimeSectionIds[19],
@@ -466,6 +469,6 @@ export const showtimeSections = [
         section: '特二區',
         price: 4980,
         capacity: 2500,
-        vacancy: 2500, // 
-    },
+        vacancy: 2500 //
+    }
 ];

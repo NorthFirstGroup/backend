@@ -1,13 +1,7 @@
 import { userIds } from './dataUsers';
 import { showtimeIds, showtimeSectionIds } from './dataActivities';
 
-export const orderIds = [
-    1,
-    2,
-    3,
-    4,
-    5,
-];
+export const orderIds = [1, 2, 3, 4, 5];
 
 export const orderTicketIds = [
     '11111111-1111-1111-6666-111111111111',
@@ -15,7 +9,7 @@ export const orderTicketIds = [
     '11111111-1111-1111-6666-111111111113',
     '11111111-1111-1111-6666-111111111114',
     '11111111-1111-1111-6666-111111111115',
-    '11111111-1111-1111-6666-111111111116',
+    '11111111-1111-1111-6666-111111111116'
 ];
 
 export const orders = [
@@ -28,7 +22,7 @@ export const orders = [
         total_price: 0,
         status: 'PROCESSING',
         payment_status: 'PENDING',
-        created_at: new Date('2025-06-03 12:00+08'),
+        created_at: new Date('2025-06-03 12:00+08')
     },
     {
         id: orderIds[1],
@@ -41,7 +35,7 @@ export const orders = [
         payment_method: 'CREDIT_CARD',
         payment_status: 'PAID',
         paid_at: new Date('2025-06-03 18:04:03.2612+08'),
-        created_at: new Date('2025-06-03 18:00+08'),
+        created_at: new Date('2025-06-03 18:00+08')
     },
     {
         id: orderIds[2],
@@ -52,7 +46,7 @@ export const orders = [
         total_price: 0,
         status: 'CANCELLED',
         payment_status: 'INVALID',
-        created_at: new Date('2025-06-10 17:30+08'),
+        created_at: new Date('2025-06-10 17:30+08')
     },
     {
         id: orderIds[3],
@@ -65,7 +59,7 @@ export const orders = [
         payment_method: 'CREDIT_CARD',
         payment_status: 'PAID',
         paid_at: new Date('2025-06-15 09:04+08'),
-        created_at: new Date('2025-06-15 09:00+08'),
+        created_at: new Date('2025-06-15 09:00+08')
     },
     {
         id: orderIds[4],
@@ -78,8 +72,8 @@ export const orders = [
         payment_method: 'CREDIT_CARD',
         payment_status: 'PAID',
         paid_at: new Date('2025-06-18 19:35+08'),
-        created_at: new Date('2025-06-18 19:30+08'),
-    },
+        created_at: new Date('2025-06-18 19:30+08')
+    }
 ];
 
 export const orderTickets = [
@@ -89,7 +83,7 @@ export const orderTickets = [
         section_id: showtimeSectionIds[0],
         price: 2000,
         quantity: 2,
-        ticket_type: 1, // 電子票券
+        ticket_type: 1 // 電子票券
     },
     {
         id: orderTicketIds[1],
@@ -97,7 +91,7 @@ export const orderTickets = [
         section_id: showtimeSectionIds[3],
         price: 2500,
         quantity: 2,
-        ticket_type: 1, // 電子票券
+        ticket_type: 1 // 電子票券
     },
     {
         id: orderTicketIds[2],
@@ -105,7 +99,7 @@ export const orderTickets = [
         section_id: showtimeSectionIds[4],
         price: 2000,
         quantity: 2,
-        ticket_type: 1, // 電子票券
+        ticket_type: 1 // 電子票券
     },
     {
         id: orderTicketIds[3],
@@ -113,7 +107,7 @@ export const orderTickets = [
         section_id: showtimeSectionIds[5],
         price: 1500,
         quantity: 4,
-        ticket_type: 1, // 電子票券
+        ticket_type: 1 // 電子票券
     },
     {
         id: orderTicketIds[4],
@@ -121,7 +115,7 @@ export const orderTickets = [
         section_id: showtimeSectionIds[10],
         price: 2500,
         quantity: 2,
-        ticket_type: 1, // 電子票券
+        ticket_type: 1 // 電子票券
     },
     {
         id: orderTicketIds[5],
@@ -129,7 +123,7 @@ export const orderTickets = [
         section_id: showtimeSectionIds[17],
         price: 1800,
         quantity: 1,
-        ticket_type: 1, // 電子票券
+        ticket_type: 1 // 電子票券
     }
 ];
 
@@ -142,7 +136,7 @@ export const tickets = [
         price: 2500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -152,7 +146,7 @@ export const tickets = [
         price: 2500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -162,7 +156,7 @@ export const tickets = [
         price: 2000,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -172,7 +166,7 @@ export const tickets = [
         price: 2000,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -182,7 +176,7 @@ export const tickets = [
         price: 1500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -192,7 +186,7 @@ export const tickets = [
         price: 1500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -202,7 +196,7 @@ export const tickets = [
         price: 1500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[1],
@@ -212,7 +206,7 @@ export const tickets = [
         price: 1500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[3],
@@ -222,7 +216,7 @@ export const tickets = [
         price: 2500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[3],
@@ -232,7 +226,7 @@ export const tickets = [
         price: 2500,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
+        certificate_url: ''
     },
     {
         order_id: orderIds[4],
@@ -242,6 +236,6 @@ export const tickets = [
         price: 1800,
         ticket_code: '',
         status: 0, // 未使用
-        certificate_url: '',
-    },
+        certificate_url: ''
+    }
 ];
