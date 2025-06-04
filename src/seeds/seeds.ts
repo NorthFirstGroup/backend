@@ -1,4 +1,4 @@
-import { DbEntity } from '../constants/dbEntity';
+import { DbEntity } from '@constants/dbEntity';
 import { resetTable, seedTable, runSeedRedisScript } from './seedUtil';
 import { areas, categories } from './dataCommon';
 import { getSeedUsers, organizers } from './dataUsers';
