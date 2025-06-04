@@ -148,12 +148,13 @@ export async function postSignin(req: JWTRequest, res: Response, next: NextFunct
             { expiresIn: config.get('secret.jwtExpiresDay') as jwt.SignOptions['expiresIn'] }
         )
 
+        const url = await getUserAvatarUrl(existingUser.id, existingUser.profile_url)
         responseSend(initResponseData(res, 2000, {
             token,
             user: {
                 name: existingUser.nick_name,
                 role: existingUser.role,
-                profile_url: existingUser?.profile_url || '',
+                profile_url: url || '',
             },
         }))
     } catch (error) {
@@ -197,7 +198,7 @@ export async function getProfile(req: JWTRequest, res: Response, next: NextFunct
 export async function putProfile(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id } = getAuthUser(req)
-        const { name, phone_num, birth_date, location_ids, profile_url } = req.body as { name: string, phone_num: string, birth_date: string, location_ids: number[], profile_url: string }
+        const { name, phone_num, birth_date, location_ids/*, profile_url*/ } = req.body as { name: string, phone_num: string, birth_date: string, location_ids: number[], profile_url: string }
 
         if (isNotValidUserName(name)) {
             responseSend(initResponseData(res, 1006), logger)
@@ -214,10 +215,11 @@ export async function putProfile(req: JWTRequest, res: Response, next: NextFunct
             return
         }
 
-        if (profile_url !== '' && isNotValidUrl(profile_url)) {
-            responseSend(initResponseData(res, 1011), logger)
-            return
-        }
+        // 在 postUpload 一併更新 user.profile_url
+        // if (profile_url !== '' && isNotValidUrl(profile_url)) {
+        //     responseSend(initResponseData(res, 1011), logger)
+        //     return
+        // }
 
         const userRepository = dataSource.getRepository(dbEntityNameUser)
         const areaRepository = dataSource.getRepository(dbEntityNameArea)
@@ -242,8 +244,8 @@ export async function putProfile(req: JWTRequest, res: Response, next: NextFunct
             user.phone = phone_num
         if (birth_date !== '')
             user.birth_date = new Date(birth_date)
-        if (profile_url !== '')
-            user.profile_url = profile_url
+        // if (profile_url !== '')
+        //     user.profile_url = profile_url
 
         user.location_ids = areas
     
