@@ -1,4 +1,4 @@
-import { UserRole } from '../entities/User';
+import { UserRole } from '@entities/User';
 import bcrypt from 'bcrypt';
 
 const saltRounds = 10;
