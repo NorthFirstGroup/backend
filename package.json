@@ -1,6 +1,6 @@
 {
     "name": "go-ticket-backend",
-    "version": "1.0.2",
+    "version": "2.0.0",
     "main": "server.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,7 +11,7 @@
         "restart": "docker compose --env-file .env up --force-recreate --build -d",
         "stop": "docker compose --env-file .env stop",
         "clean": "docker compose --env-file .env down -v",
-        "seeds": "ts-node src/seeds/seeds.ts",
+        "seeds": "ts-node -r tsconfig-paths/register src/seeds/seeds.ts",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "version:major": "export ENV_ASSIGN='major' && chmod +x ./version-up.sh && ./version-up.sh",
@@ -55,6 +55,7 @@
         "formidable": "^3.5.4",
         "ioredis": "^5.6.0",
         "jsonwebtoken": "^9.0.2",
+        "node-ecpay-aio": "^0.2.3",
         "nodemailer": "^7.0.0",
         "pg": "^8.14.1",
         "pino": "^9.6.0",
