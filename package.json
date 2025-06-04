@@ -11,7 +11,7 @@
         "restart": "docker compose --env-file .env up --force-recreate --build -d",
         "stop": "docker compose --env-file .env stop",
         "clean": "docker compose --env-file .env down -v",
-        "seeds": "ts-node src/seeds/seeds.ts",
+        "seeds": "ts-node -r tsconfig-paths/register src/seeds/seeds.ts",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "version:major": "export ENV_ASSIGN='major' && chmod +x ./version-up.sh && ./version-up.sh",

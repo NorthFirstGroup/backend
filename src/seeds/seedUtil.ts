@@ -1,7 +1,10 @@
-import { dataSource } from '../db/data-source'
-import { redis } from '../db/redis-source'
+import { dataSource } from '@db/data-source';
+import { redis } from '@db/redis-source';
 import { showtimes } from './dataActivities';
-import { initRedisShowtimeInventory } from '../scripts/init-redis-inventtory'
+import { initRedisShowtimeInventory } from '../scripts/init-redis-inventtory';
+import getLogger from '@utils/logger';
+
+const logger = getLogger('Seed');
 
 export async function resetTable(tableName: string) {
     await dataSource.initialize();
@@ -11,10 +14,10 @@ export async function resetTable(tableName: string) {
     try {
         await queryRunner.query(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE;`);
         await queryRunner.commitTransaction();
-        console.log(`Reset '${tableName}' table completed.`);
+        logger.info(`Reset '${tableName}' table completed.`);
     } catch (error) {
         await queryRunner.rollbackTransaction();
-        console.error('Error during reset:', error);
+        logger.error(`Error during reset: ${error}`);
         process.exit(1);
     } finally {
         await queryRunner.release();
@@ -24,7 +27,7 @@ export async function resetTable(tableName: string) {
 
 export async function seedTable<T>(tableName: string, data: T[]) {
     if (!Array.isArray(data) || data.length === 0) {
-        console.error(`No '${tableName}' data provided for seeding.`);
+        logger.error(`No '${tableName}' data provided for seeding.`);
         return;
     }
 
@@ -39,10 +42,10 @@ export async function seedTable<T>(tableName: string, data: T[]) {
         await repo.save(data);
 
         await queryRunner.commitTransaction();
-        console.log(`Seeding '${tableName}' table completed.`);
+        logger.info(`Seeding '${tableName}' table completed.`);
     } catch (error) {
         await queryRunner.rollbackTransaction();
-        console.error('Error during seeding:', error);
+        logger.error('Error during seeding:', error);
         process.exit(1);
     } finally {
         await queryRunner.release();
@@ -52,38 +55,37 @@ export async function seedTable<T>(tableName: string, data: T[]) {
 
 export async function runSeedRedisScript() {
     try {
-        console.log('Starting seeding redis process...');
+        logger.info('Starting seeding redis process...');
 
         // --- Initialize Database Connection ONCE ---
         if (!dataSource.isInitialized) {
             await dataSource.initialize();
-            console.log('Database DataSource initialized.');
+            logger.info('Database DataSource initialized.');
         }
 
         try {
             await redis.ping();
-            console.log('Redis client connected successfully.');
+            logger.info('Redis client connected successfully.');
         } catch (error) {
-            console.log('Failed to connect to Redis:', error);
+            logger.error(`Failed to connect to Redis: ${error}`);
             throw new Error('Redis connection failed. Aborting redis seed.');
         }
 
-        await Promise.all(showtimes.map( showtime => initRedisShowtimeInventory(showtime.id)));
+        await Promise.all(showtimes.map(showtime => initRedisShowtimeInventory(showtime.id)));
 
-        console.log('All Redis showtime inventories initialized successfully.');
-
+        logger.info('All Redis showtime inventories initialized successfully.');
     } catch (error) {
-        console.log('Seeding process failed:', error);
+        logger.error(`Seeding process failed: ${error}`);
     } finally {
         // --- Destroy Database Connection ONCE ---
         if (dataSource.isInitialized) {
             await dataSource.destroy();
-            console.log('Database DataSource closed.');
+            logger.info('Database DataSource closed.');
         }
 
         // --- Close Redis Connection ONCE ---
         // Use quit() to gracefully close the connection.
         redis.quit();
-        console.log('Redis client disconnected.');
+        logger.info('Redis client disconnected.');
     }
 }
