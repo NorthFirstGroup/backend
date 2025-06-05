@@ -169,7 +169,7 @@ export const tickets = [
         certificate_url: ''
     },
     {
-        order_id: orderIds[2],
+        order_id: orderIds[1],
         order_ticket_id: orderTicketIds[3],
         order_number: '2025060300002',
         section: 'C區',
