@@ -129,9 +129,9 @@ export const orderTickets = [
 
 export const tickets = [
     {
-        order_id: orderIds[0],
-        order_ticket_id: orderTicketIds[0],
-        order_number: '2025060300001',
+        order_id: orderIds[1],
+        order_ticket_id: orderTicketIds[1],
+        order_number: '2025060300002',
         section: 'A區',
         price: 2500,
         ticket_code: '',
@@ -139,9 +139,9 @@ export const tickets = [
         certificate_url: ''
     },
     {
-        order_id: orderIds[0],
-        order_ticket_id: orderTicketIds[0],
-        order_number: '2025060300001',
+        order_id: orderIds[1],
+        order_ticket_id: orderTicketIds[1],
+        order_number: '2025060300002',
         section: 'A區',
         price: 2500,
         ticket_code: '',
@@ -179,9 +179,9 @@ export const tickets = [
         certificate_url: ''
     },
     {
-        order_id: orderIds[2],
+        order_id: orderIds[1],
         order_ticket_id: orderTicketIds[3],
-        order_number: '2025060300001',
+        order_number: '2025060300002',
         section: 'C區',
         price: 1500,
         ticket_code: '',
@@ -189,9 +189,9 @@ export const tickets = [
         certificate_url: ''
     },
     {
-        order_id: orderIds[2],
+        order_id: orderIds[1],
         order_ticket_id: orderTicketIds[3],
-        order_number: '2025060300001',
+        order_number: '2025060300002',
         section: 'C區',
         price: 1500,
         ticket_code: '',
@@ -199,9 +199,9 @@ export const tickets = [
         certificate_url: ''
     },
     {
-        order_id: orderIds[2],
+        order_id: orderIds[1],
         order_ticket_id: orderTicketIds[3],
-        order_number: '2025060300001',
+        order_number: '2025060300002',
         section: 'C區',
         price: 1500,
         ticket_code: '',
