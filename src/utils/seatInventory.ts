@@ -140,6 +140,18 @@ export class SeatInventoryService {
             throw error;
         }
     }
+
+    // 清除redis資料
+    async clearActivitySeats(showtimeId: string): Promise<void> {
+        try {
+            const redisKey = `${this.REDIS_SHOWTIME_SEATS_PREFIX}:${showtimeId}`;
+            await this.redis.del(redisKey);
+            logger.info(`成功清除場次 ${showtimeId} 的座位庫存資料`);
+        } catch (error) {
+            logger.error(`清除場次 ${showtimeId} 座位庫存失敗: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
+        }
+    }
 }
 
 export let seatInventoryService: SeatInventoryService;
