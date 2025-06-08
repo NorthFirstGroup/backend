@@ -45,7 +45,7 @@ export const orders = [
         total_count: 2,
         total_price: 3600,
         status: 'CANCELLED',
-        payment_status: 'INVALID',
+        payment_status: 'FAILED',
         created_at: new Date('2025-06-10 17:30+08')
     },
     {

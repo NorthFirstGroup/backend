@@ -34,6 +34,15 @@ interface OrderRequestBody {
     tickets: TicketInput[];
 }
 
+const paymentStatusMap: { [key in PaymentStatus]: string } = {
+    [PaymentStatus.PENDING]: '待付款',
+    [PaymentStatus.PAID]: '已付款',
+    [PaymentStatus.FAILED]: '支付失敗',
+    [PaymentStatus.REFUNDED]: '已退款',
+    [PaymentStatus.EXPIRED]: '支付超時',
+    [PaymentStatus.CANCELLED]: '支付取消'
+};
+
 function validateOrderNumber(orderNumber: string): boolean {
     // 1. Check total length and format
     if (!/^\d{13}$/.test(orderNumber)) {
@@ -467,6 +476,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
         }
 
         const seats = order.tickets.map(ticket => ({
+            id: ticket.id,
             status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used
             seatNumber: ticket.section,
             certificateUrl: ticket.certificate_url
@@ -488,6 +498,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
             })}`,
             location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
             organizer: order.showtime.activity.organizer.name,
+            status: paymentStatusMap[order.payment_status],
             ticketType: '電子票券', // As per OrderTicketEntity, ticket_type default is 1 (electronic ticket)
             ticketCount: order.total_count,
             totalPrice: parseFloat(order.total_price.toString()),
@@ -520,6 +531,7 @@ interface OrderListItem {
     totalPrice: number;
     coverImage: string;
     seats: {
+        id: string;
         status: string;
         seatNumber: string;
         certificateUrl: string;
@@ -576,16 +588,9 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
 
         const formattedOrders: OrderListItem[] = orders.map(order => {
             const ticketType = '電子票券'; // 根據 OrderTicketEntity 的預設值 [cite: 65]
-            const paymentStatusMap: { [key in PaymentStatus]: string } = {
-                [PaymentStatus.PENDING]: '待付款',
-                [PaymentStatus.PAID]: '已付款',
-                [PaymentStatus.FAILED]: '支付失敗',
-                [PaymentStatus.REFUNDED]: '已退款',
-                [PaymentStatus.EXPIRED]: '支付超時',
-                [PaymentStatus.CANCELLED]: '支付取消'
-            };
 
             const seats = order.tickets.map(ticket => ({
+                id: ticket.id,
                 status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used [cite: 111]
                 seatNumber: ticket.section, // [cite: 110]
                 certificateUrl: ticket.certificate_url // [cite: 111]
