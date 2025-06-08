@@ -64,8 +64,8 @@ router.delete(
     organizerController.deleteActivityShowtime
 );
 // 取得票券座位資料
-router.get('/activity/ticket/:ticket_id', auth, isOrganizer, organizerController.getTicket);
+router.get('/ticket/:ticket_id', auth, isOrganizer, organizerController.getTicket);
 // 票券座位狀態改為已使用
-router.put('/activity/ticket/:ticket_id', auth, isOrganizer, organizerController.putTicket);
+router.put('/ticket/:ticket_id', auth, isOrganizer, organizerController.putTicket);
 
 export default router;
