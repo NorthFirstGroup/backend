@@ -1,40 +1,39 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany } from 'typeorm'
-import { UserEntity } from './User'
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany } from 'typeorm';
+import { UserEntity } from './User';
 
 /** 資料庫用的 Entity 名稱 */
-export const dbEntityNameArea = 'Area'
+export const dbEntityNameArea = 'Area';
 
 /** Area 資料表對應的型別結構 */
 export interface Area {
     /** 整數自動遞增 */
-    id: number
+    id: number;
     /** 地區名稱 */
-    name: string
+    name: string;
     /** 建立時間 */
-    created_at: Date
+    created_at: Date;
     /** 更新時間 */
-    updated_at: Date
+    updated_at: Date;
 }
 
 @Entity(dbEntityNameArea)
 /** 地區 Entity 定義 */
-export class AreaEntity { 
+export class AreaEntity {
     @PrimaryGeneratedColumn()
-    id!: number
+    id!: number;
 
     @Column({ type: 'varchar', length: 100, nullable: false })
-    name!: string
+    name!: string;
 
     @CreateDateColumn({ type: 'timestamptz', nullable: false })
-    created_at!: Date
+    created_at!: Date;
 
     @UpdateDateColumn({ type: 'timestamptz', nullable: false })
-    updated_at!: Date
+    updated_at!: Date;
 
-    @ManyToMany(() => UserEntity, (user) => user.location_ids) // 反向關聯
-    users!: UserEntity[]
+    @ManyToMany(() => UserEntity, user => user.location_ids) // 反向關聯
+    users!: UserEntity[];
 }
-
 
 /** 未關聯前 schema 寫法如下 */
 

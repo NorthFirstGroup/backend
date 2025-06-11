@@ -98,6 +98,7 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
         const lowStocks = await activityRepository
             .createQueryBuilder('activity')
             .leftJoin('activity.category', 'category')
+            .leftJoin('activity.showtimeSections', 'showtimeSection')
             .where('activity.status = :status', { status: ActivityStatus.Published })
             .select([
                 'activity.id AS id',
@@ -105,7 +106,8 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
                 'activity.cover_image AS cover_image',
                 'category.name AS category', // 取得 category.name 並命名為 category
                 'activity.start_time AS start_time',
-                'activity.end_time AS end_time'
+                'activity.end_time AS end_time',
+                'showtimeSection.vacancy AS vacancy'
             ])
             .getRawMany();
 

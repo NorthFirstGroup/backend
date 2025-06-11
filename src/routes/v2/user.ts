@@ -1,25 +1,25 @@
-import { Router } from 'express'
-import config from '../../config'
-import { dataSource } from '../../db/data-source'
-import getLogger from '../../utils/logger'
-import * as userController from '../../controllers/user'
-import { createAuthMiddleware } from '../../middlewares/auth'
-import { dbEntityNameUser } from '../../entities/User'
+import { Router } from 'express';
+import config from '../../config';
+import { dataSource } from '../../db/data-source';
+import getLogger from '../../utils/logger';
+import * as userController from '../../controllers/user';
+import { createAuthMiddleware } from '../../middlewares/auth';
+import { dbEntityNameUser } from '../../entities/User';
 
-const router = Router()
+const router = Router();
 
 // 建立 logger
-const logger = getLogger('User')
+const logger = getLogger('User');
 
 // 設定驗證 middleware
 // TODO: change '_auth' to 'auth' if it is used
 const _auth = createAuthMiddleware({
     secret: config.get('secret.jwtSecret'),
     userRepository: dataSource.getRepository(dbEntityNameUser),
-    logger,
-})
+    logger
+});
 
 // 路由定義
-router.post('/signup', (req, res, next) => userController.postSignup(req, res, next, 'v2'))
+router.post('/signup', (req, res, next) => userController.postSignup(req, res, next, 'v2'));
 
-export default router
+export default router;

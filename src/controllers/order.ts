@@ -1,13 +1,13 @@
 import { Response, NextFunction } from 'express';
-import { Request as JWTRequest } from 'express-jwt'
-import { dataSource } from '../db/data-source'
+import { Request as JWTRequest } from 'express-jwt';
+import { dataSource } from '../db/data-source';
 import { isNotValidInteger, isNotValidUuid } from '../utils/validation';
-import getLogger from '../utils/logger'
-import responseSend, { initResponseData } from '../utils/serverResponse'
-import { getAuthUser } from '../middlewares/auth'
+import getLogger from '../utils/logger';
+import responseSend, { initResponseData } from '../utils/serverResponse';
+import { getAuthUser } from '../middlewares/auth';
 import { ActivityEntity } from '../entities/Activity';
 import { ShowtimesEntity } from '../entities/Showtimes';
-import { OrderStatus, PaymentMethod, PaymentStatus,PickupStatus, OrderEntity } from '../entities/Order';
+import { OrderStatus, PaymentMethod, PaymentStatus, PickupStatus, OrderEntity } from '../entities/Order';
 import { OrderTicketEntity } from '../entities/OrderTicket';
 // import { ActivitySiteEntity } from '../entities/ActivitySite';
 // import { OrganizerEntity } from '../entities/Organizer';
@@ -19,7 +19,7 @@ import { DailySequenceEntity } from '../entities/DailySequence';
 import { seatInventoryService } from '../utils/seatInventory';
 import { createPaymentForm, verifyPayment } from '@/utils/ecPayAdapter';
 
-const logger = getLogger('User')
+const logger = getLogger('User');
 
 // 票券介面
 interface TicketInput {
@@ -35,9 +35,19 @@ interface OrderRequestBody {
     tickets: TicketInput[];
 }
 
+const paymentStatusMap: { [key in PaymentStatus]: string } = {
+    [PaymentStatus.PENDING]: '待付款',
+    [PaymentStatus.PAID]: '已付款',
+    [PaymentStatus.FAILED]: '支付失敗',
+    [PaymentStatus.REFUNDED]: '已退款',
+    [PaymentStatus.EXPIRED]: '支付超時',
+    [PaymentStatus.CANCELLED]: '支付取消'
+};
+
 function validateOrderNumber(orderNumber: string): boolean {
     // 1. Check total length and format
-    if (!/^\d{13}$/.test(orderNumber)) { // YYYYMMDD (8 digits) + SSSSS (5 digits) = 13 digits
+    if (!/^\d{13}$/.test(orderNumber)) {
+        // YYYYMMDD (8 digits) + SSSSS (5 digits) = 13 digits
         return false; // 必須是 13 位數字
     }
 
@@ -49,7 +59,8 @@ function validateOrderNumber(orderNumber: string): boolean {
     const day = parseInt(datePart.substring(6, 8), 10);
 
     // 基本日期驗證 (month 1-12, day based on month)
-    if (month < 1 || month > 12 || day < 1 || day > 31) { // Basic check, more robust date validation can be added
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+        // Basic check, more robust date validation can be added
         return false;
     }
 
@@ -72,8 +83,7 @@ function validateOrderNumber(orderNumber: string): boolean {
         return false; // 訂單日期超出有效時間範圍
     }
 
-    if (parseInt(sequentialNumberPart) < 1)
-        return false;
+    if (parseInt(sequentialNumberPart) < 1) return false;
 
     return true; // All checks passed
 }
@@ -96,13 +106,19 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         await queryRunner.connect();
         await queryRunner.startTransaction(); // **開始事務**：確保訂單和訂單票券的資料庫操作原子性
 
-        const { id } = getAuthUser(req)
+        const { id } = getAuthUser(req);
 
         const { activity_id, showtime_id, tickets } = req.body as OrderRequestBody;
         showtimeId = showtime_id;
 
         // 2. Body 驗證
-        if (isNotValidInteger(parseInt(activity_id, 10)) || !showtimeId || !tickets || !Array.isArray(tickets) || tickets.length === 0) {
+        if (
+            isNotValidInteger(parseInt(activity_id, 10)) ||
+            !showtimeId ||
+            !tickets ||
+            !Array.isArray(tickets) ||
+            tickets.length === 0
+        ) {
             responseSend(initResponseData(res, 1000), logger);
             return;
         }
@@ -132,14 +148,14 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const dailySequenceRepository = queryRunner.manager.getRepository(DailySequenceEntity); // <--- NEW
 
         const activity = await activityRepository.findOne({
-            where: { id: parsedActivityId, is_deleted: false },
+            where: { id: parsedActivityId, is_deleted: false }
         });
 
         if (!activity) {
             responseSend(initResponseData(res, 1603), logger);
             return;
         }
-    
+
         //活動場次有效性
         const showtime = await showtimeRepository.findOne({
             where: { id: showtimeId, activity_id: parsedActivityId },
@@ -151,8 +167,8 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             return;
         }
         if (!showtime.showtimeSections || showtime.showtimeSections.length === 0) {
-             responseSend(initResponseData(res, 1605), logger);
-             return;
+            responseSend(initResponseData(res, 1605), logger);
+            return;
         }
 
         // 檢查活動是否在開賣中
@@ -166,7 +182,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         const showtimeSections = showtime.showtimeSections;
         let totalTicketsQuantity = 0; // 用於計算 total_count
         let totalPriceAmount = 0; // 用於計算 total_price
-        const orderTicketsDetails: { sectionId: string; price: number; quantity: number; }[] = []; // To store sectionId for OrderTicketEntity
+        const orderTicketsDetails: { sectionId: string; price: number; quantity: number }[] = []; // To store sectionId for OrderTicketEntity
 
         for (const requestedTicket of tickets) {
             const sectionDetail = showtimeSections.find(section => section.section === requestedTicket.zone);
@@ -176,7 +192,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 return;
             }
             // 檢查 price 是否存在且匹配
-            if (sectionDetail.price === null || sectionDetail.price === undefined || sectionDetail.price !== requestedTicket.price) {
+            if (
+                sectionDetail.price === null ||
+                sectionDetail.price === undefined ||
+                sectionDetail.price !== requestedTicket.price
+            ) {
                 responseSend(initResponseData(res, 1608), logger);
                 return;
             }
@@ -207,7 +227,7 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             orderTicketsDetails.push({
                 sectionId: sectionDetail.id, // Use the ID of the ShowtimeSectionEntity
                 price: requestedTicket.price,
-                quantity: requestedTicket.quantity,
+                quantity: requestedTicket.quantity
             });
         }
 
@@ -215,15 +235,17 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         for (const deducted of successfullyDeductedTickets) {
             // Ensure sectionDetail.vacancy is not null or undefined before subtraction
             if (deducted.sectionDetail.vacancy === null || deducted.sectionDetail.vacancy === undefined) {
-                 logger.error(`ShowtimeSection ${deducted.sectionDetail.id} 的 vacancy 為 null 或 undefined。`);
-                 // Decide how to handle this error. For now, we'll let it proceed if it's just a warning.
-                 // You might want to rollback and return an error here.
-                 responseSend(initResponseData(res, 5602), logger);
-                 throw new Error('Seat vacancy data is missing.'); // Throw to trigger rollback
+                logger.error(`ShowtimeSection ${deducted.sectionDetail.id} 的 vacancy 為 null 或 undefined。`);
+                // Decide how to handle this error. For now, we'll let it proceed if it's just a warning.
+                // You might want to rollback and return an error here.
+                responseSend(initResponseData(res, 5602), logger);
+                throw new Error('Seat vacancy data is missing.'); // Throw to trigger rollback
             }
             deducted.sectionDetail.vacancy -= deducted.quantity;
             await showtimeSectionRepository.save(deducted.sectionDetail);
-            logger.info(`更新 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}: 新值 ${deducted.sectionDetail.vacancy}`);
+            logger.info(
+                `更新 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}: 新值 ${deducted.sectionDetail.vacancy}`
+            );
         }
 
         // 5. 更新訂單編號
@@ -239,11 +261,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
             lock: { mode: 'pessimistic_write' } // Locks the row for the duration of the transaction
         });
 
-       if (!dailySequence) {
+        if (!dailySequence) {
             // If no sequence exists for today, create a new one
             dailySequence = dailySequenceRepository.create({
                 date_key: yearMonthDay,
-                sequence: 0, // Will be incremented to 1 for the first order
+                sequence: 0 // Will be incremented to 1 for the first order
             });
         }
 
@@ -271,22 +293,22 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         newOrder.pickup_status = PickupStatus.NOT_PICKED_UP;
 
         const savedOrder = await orderRepository.save(newOrder);
-        logger.info(`saved orderRepository ${savedOrder.id}`)
+        logger.info(`saved orderRepository ${savedOrder.id}`);
 
-        const orderTicketsToSave: OrderTicketEntity[] = orderTicketsDetails.map(detail  => {
+        const orderTicketsToSave: OrderTicketEntity[] = orderTicketsDetails.map(detail => {
             const orderTicket = new OrderTicketEntity();
             orderTicket.order_id = savedOrder.id;
             orderTicket.section_id = detail.sectionId;
             orderTicket.price = detail.price;
             orderTicket.quantity = detail.quantity;
-            orderTicket.ticket_type = 1;// 預設電子票券
+            orderTicket.ticket_type = 1; // 預設電子票券
             return orderTicket;
         });
 
         // console.log(JSON.stringify(orderTicketsToSave));
 
-        const savedOrderTickets = await orderTicketRepository.save(orderTicketsToSave);// 批次儲存所有訂單票券
-        logger.info(`saved orderTicketRepository: ${savedOrderTickets.length} entries created.`)
+        const savedOrderTickets = await orderTicketRepository.save(orderTicketsToSave); // 批次儲存所有訂單票券
+        logger.info(`saved orderTicketRepository: ${savedOrderTickets.length} entries created.`);
 
         const ticketsToSave: TicketEntity[] = [];
         for (const savedOrderTicket of savedOrderTickets) {
@@ -324,11 +346,13 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
         // logger.info(`commitTransaction`)
 
         // 訂單建立成功
-        responseSend(initResponseData(res, 2000, {
-            order_number: savedOrder.order_number
-            // order_id: savedOrder.id
-        }), logger);
-
+        responseSend(
+            initResponseData(res, 2000, {
+                order_number: savedOrder.order_number
+                // order_id: savedOrder.id
+            }),
+            logger
+        );
     } catch (error) {
         logger.error('postCreateOrder 錯誤:');
         // --- NEW/MODIFIED LOGGING ---
@@ -350,33 +374,48 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 // (包括透過 showtimeSectionRepository.save() 進行的 vacancy 更新)
                 // 都會被此 rollback 操作自動回滾。因此，不需要在這裡對資料庫進行額外的回滾操作。
                 for (const deducted of successfullyDeductedTickets) {
-                     if (deducted.sectionDetail.vacancy !== null && deducted.sectionDetail.vacancy !== undefined) {
-                         deducted.sectionDetail.vacancy += deducted.quantity;
-                         logger.info(`由於回滾，理論上會自動恢復 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}`);
-                     }
+                    if (deducted.sectionDetail.vacancy !== null && deducted.sectionDetail.vacancy !== undefined) {
+                        deducted.sectionDetail.vacancy += deducted.quantity;
+                        logger.info(
+                            `由於回滾，理論上會自動恢復 ShowtimeSections vacancy for ID ${deducted.sectionDetail.id}`
+                        );
+                    }
                 }
             } catch (rollbackError) {
-                logger.error(`資料庫事務回滾失敗: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
+                logger.error(
+                    `資料庫事務回滾失敗: ${
+                        rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+                    }`
+                );
             }
         }
 
-        if (showtimeId && !isNotValidInteger(parsedActivityId) ) {
+        if (showtimeId && !isNotValidInteger(parsedActivityId)) {
             // 將 Redis 中預扣的座位歸還
             for (const deducted of successfullyDeductedTickets) {
                 try {
                     await seatInventoryService.returnSeats(showtimeId, deducted.zone, deducted.quantity);
-                    logger.info(`錯誤時歸還 Redis 座位：場次 ${showtimeId} 區域 ${deducted.zone} 數量 ${deducted.quantity}`);
+                    logger.info(
+                        `錯誤時歸還 Redis 座位：場次 ${showtimeId} 區域 ${deducted.zone} 數量 ${deducted.quantity}`
+                    );
                 } catch (returnError) {
-                    logger.error(`歸還 Redis 座位失敗：${returnError instanceof Error ? returnError.message : String(returnError)}`);
+                    logger.error(
+                        `歸還 Redis 座位失敗：${
+                            returnError instanceof Error ? returnError.message : String(returnError)
+                        }`
+                    );
                 }
             }
         }
 
-        responseSend(initResponseData(res, 1610, {
-            data: {}
-        }), logger);
+        responseSend(
+            initResponseData(res, 1610, {
+                data: {}
+            }),
+            logger
+        );
 
-        logger.error('建立訂單失敗', error)
+        logger.error('建立訂單失敗', error);
         next(error);
     } finally {
         if (queryRunner) {
@@ -384,7 +423,11 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
                 await queryRunner.release();
                 logger.info('QueryRunner 已釋放。');
             } catch (releaseError) {
-                logger.error(`釋放 QueryRunner 失敗: ${releaseError instanceof Error ? releaseError.message : String(releaseError)}`);
+                logger.error(
+                    `釋放 QueryRunner 失敗: ${
+                        releaseError instanceof Error ? releaseError.message : String(releaseError)
+                    }`
+                );
             }
         }
     }
@@ -393,8 +436,8 @@ export async function postCreateOrder(req: JWTRequest, res: Response, next: Next
 //取得個人訂單詳細資訊
 export async function getOrderDetail(req: JWTRequest, res: Response, next: NextFunction) {
     try {
-        const { id:userId } = getAuthUser(req)
-        const { order_number } = req.params
+        const { id: userId } = getAuthUser(req);
+        const { order_number } = req.params;
 
         if (typeof order_number !== 'string' || order_number.length === 0 || !validateOrderNumber(order_number)) {
             responseSend(initResponseData(res, 1000), logger);
@@ -402,7 +445,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
         }
 
         // 取得資料
-        const orderRepository = dataSource.getRepository(OrderEntity)
+        const orderRepository = dataSource.getRepository(OrderEntity);
 
         const order = await orderRepository.findOne({
             where: { order_number: order_number, user_id: userId },
@@ -414,9 +457,9 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
                 'showtime.activity.organizer',
                 'orderTickets',
                 'tickets',
-                'user',
-            ],
-        })
+                'user'
+            ]
+        });
 
         if (!order) {
             responseSend(initResponseData(res, 1620), logger);
@@ -434,24 +477,34 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
         }
 
         const seats = order.tickets.map(ticket => ({
+            id: ticket.id,
             status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used
             seatNumber: ticket.section,
-            certificateUrl: ticket.certificate_url,
-        }))
+            certificateUrl: ticket.certificate_url
+        }));
 
         let paymentFormUrl:string | undefined = undefined;
         if (order.payment_status === PaymentStatus.PENDING) {
             paymentFormUrl = await createPaymentForm(order.order_number, Number(order.total_price), order.showtime.activity.name);
         }
 
-        const responseData = initResponseData(res, 2000)
+        const responseData = initResponseData(res, 2000);
         responseData.data = {
             // orderId: order_id,
             orderNumber: order.order_number,
             eventName: order.showtime.activity.name,
-            eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+            eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            })}`,
             location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
             organizer: order.showtime.activity.organizer.name,
+            status: paymentStatusMap[order.payment_status],
             ticketType: '電子票券', // As per OrderTicketEntity, ticket_type default is 1 (electronic ticket)
             ticketCount: order.total_count,
             totalPrice: parseFloat(order.total_price.toString()),
@@ -464,12 +517,12 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
                 email: user.email,
             },
             paymentFormUrl
-        }
+        };
 
-        responseSend(responseData)
+        responseSend(responseData);
     } catch (error) {
-        logger.error('取得個人訂單詳細資訊錯誤', error)
-        next(error)
+        logger.error('取得個人訂單詳細資訊錯誤', error);
+        next(error);
     }
 }
 
@@ -486,6 +539,7 @@ interface OrderListItem {
     totalPrice: number;
     coverImage: string;
     seats: {
+        id: string;
         status: string;
         seatNumber: string;
         certificateUrl: string;
@@ -495,8 +549,7 @@ interface OrderListItem {
 //取得個人訂單資訊列表
 export async function getUserOrders(req: JWTRequest, res: Response, next: NextFunction) {
     try {
-
-        const { id: userId } = getAuthUser(req)
+        const { id: userId } = getAuthUser(req);
         const page = parseInt(req.query.page as string) || 1;
         const pageSize = parseInt(req.query.page_size as string) || 10;
         const sortBy = (req.query.sort_by as string) || 'eventDate'; // 預設排序欄位
@@ -523,7 +576,8 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
         const orderRepository = dataSource.getRepository(OrderEntity);
 
         // 構建查詢
-        const queryBuilder = orderRepository.createQueryBuilder('order')
+        const queryBuilder = orderRepository
+            .createQueryBuilder('order')
             .leftJoinAndSelect('order.showtime', 'showtime') // 關聯場次
             .leftJoinAndSelect('showtime.activity', 'activity') // 關聯活動
             .leftJoinAndSelect('showtime.site', 'site') // 關聯場地
@@ -542,26 +596,27 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
 
         const formattedOrders: OrderListItem[] = orders.map(order => {
             const ticketType = '電子票券'; // 根據 OrderTicketEntity 的預設值 [cite: 65]
-            const paymentStatusMap: { [key in PaymentStatus]: string } = {
-                [PaymentStatus.PENDING]: '待付款',
-                [PaymentStatus.PAID]: '已付款',
-                [PaymentStatus.FAILED]: '支付失敗',
-                [PaymentStatus.REFUNDED]: '已退款',
-                [PaymentStatus.EXPIRED]: '支付超時',
-                [PaymentStatus.CANCELLED]: '支付取消',
-            };
 
             const seats = order.tickets.map(ticket => ({
+                id: ticket.id,
                 status: ticket.status === 0 ? '未使用' : '已使用', // Assuming 0 for unused, 1 for used [cite: 111]
                 seatNumber: ticket.section, // [cite: 110]
-                certificateUrl: ticket.certificate_url, // [cite: 111]
+                certificateUrl: ticket.certificate_url // [cite: 111]
             }));
 
             return {
                 // orderId: order.id,
                 orderNumber: order.order_number,
                 eventName: order.showtime.activity.name,
-                eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false })}`,
+                eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                })}`,
                 location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
                 organizer: order.showtime.activity.organizer.name,
                 status: paymentStatusMap[order.payment_status],
@@ -569,7 +624,7 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
                 ticketCount: order.total_count,
                 totalPrice: parseFloat(order.total_price.toString()),
                 coverImage: order.showtime.activity.cover_image,
-                seats: seats,
+                seats: seats
             };
         });
 
@@ -581,15 +636,14 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
             pagination: {
                 total: total,
                 page: page,
-                limit: pageSize,
+                limit: pageSize
             }
-        }
+        };
 
         responseSend(responseData);
-
     } catch (error) {
-        logger.error('取得個人訂單資訊列表錯誤', error)
-        next(error)
+        logger.error('取得個人訂單資訊列表錯誤', error);
+        next(error);
     }
 }
 
@@ -620,7 +674,7 @@ export async function getTicketDetail(req: JWTRequest, res: Response, next: Next
                 'order.showtime.site',
                 'order.showtime.activity.organizer',
                 'orderTicket'
-            ],
+            ]
         });
 
         if (!ticket) {
@@ -631,40 +685,41 @@ export async function getTicketDetail(req: JWTRequest, res: Response, next: Next
         const ticketStatusMap: { [key: number]: string } = {
             0: '未使用',
             1: '已使用',
-            2: '已失效', // 假設 2 代表失效
+            2: '已失效' // 假設 2 代表失效
         };
         const ticketStatus = ticketStatusMap[ticket.status] || '未知狀態';
 
         // 票券類型轉換 (根據 OrderTicketEntity 中的 ticket_type 欄位)
         const ticketTypeMap: { [key: number]: string } = {
             1: '電子票券',
-            2: '實體票券', // 假設 2 代表實體票券
+            2: '實體票券' // 假設 2 代表實體票券
         };
         const ticketType = ticketTypeMap[ticket.orderTicket.ticket_type] || '未知類型';
 
         const formattedTicketDetail = {
             ticket_code: ticket.ticket_code,
             eventName: ticket.order.showtime.activity.name,
-            eventDate: new Date(ticket.order.showtime.start_time).toLocaleString('zh-TW', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false, // 24小時制
-            }).replace(/\//g, '/'), // 格式化為 "YYYY/MM/DD HH:MM"
+            eventDate: new Date(ticket.order.showtime.start_time)
+                .toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false // 24小時制
+                })
+                .replace(/\//g, '/'), // 格式化為 "YYYY/MM/DD HH:MM"
             location: `${ticket.order.showtime.site.name} / ${ticket.order.showtime.site.address}`,
             organizer: ticket.order.showtime.activity.organizer.name,
             status: ticketStatus,
             ticketType: ticketType,
-            seats: ticket.section,
+            seats: ticket.section
         };
 
         const responseData = initResponseData(res, 2000);
         responseData.data = formattedTicketDetail;
 
         responseSend(responseData);
-
     } catch (error) {
         logger.error(`取得票券詳細資訊錯誤`, error);
         next(error);

@@ -17,11 +17,19 @@ import { OrderEntity } from '@entities/Order';
 import { ActivityStatus } from '@enums/activity';
 
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
 import 'dayjs/locale/zh-tw';
 import { transformAPIKeyToCamel } from '@/utils/APITransformer';
 import { AuthRequest } from '@/middlewares/organizer';
 import { ActivityTypeEntity } from '@/entities/ActivityType';
+import { TicketEntity } from '@/entities/Ticket';
+import { DbEntity } from '@/constants/dbEntity';
+import { TicketStatus } from '@/constants/ticket';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 dayjs.locale('zh-tw');
 const logger = getLogger('Organizer');
 
@@ -44,6 +52,9 @@ const ALLOWED_MIME_TYPES = {
 } as const;
 type AllowedMimeTypes = keyof typeof ALLOWED_MIME_TYPES;
 
+export const NON_EDITABLE_ACTIVITY_STATUSES = [ActivityStatus.Cancel, ActivityStatus.Finish, ActivityStatus.OnGoing];
+
+const INVALID_ACTIVITY_STATUS = [ActivityStatus.Cancel, ActivityStatus.Finish];
 /**
  * Validate the site information.
  * @param reqBody - The request body containing site information.
@@ -89,6 +100,10 @@ const siteValidator = async (reqBody: any) => {
     };
 };
 
+export function formatToTaipeiDateTime(dateStr: string): string {
+    return dayjs(dateStr).tz('Asia/Taipei').format('YYYY/M/D HH:mm');
+}
+
 /** 上傳圖片 */
 export async function postUploadImage(req: JWTRequest, res: Response, next: NextFunction) {
     try {
@@ -122,8 +137,6 @@ export async function postUploadImage(req: JWTRequest, res: Response, next: Next
 // organizer Activity CRUD operations
 
 // 51. 取得廠商活動列表
-export const NON_EDITABLE_ACTIVITY_STATUSES = [ActivityStatus.Cancel, ActivityStatus.Finish];
-
 export async function getActivity(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id: userId } = getAuthUser(req);
@@ -915,6 +928,97 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
 // 刪除活動場次
 export async function deleteActivityShowtime(req: JWTRequest, res: Response, next: NextFunction) {
     try {
+        const activity_id = Number(req.params.activity_id);
+        const showtime_id = req.params.showtime_id; // UUID
+
+        const user = getAuthUser(req);
+        const userId = user.id;
+
+        const showtimeRepo = dataSource.getRepository(ShowtimesEntity);
+        const sectionRepo = dataSource.getRepository(ShowtimeSectionsEntity);
+
+        // 檢查型別
+        if (isNotValidInteger(activity_id)) {
+            logger.error('活動Id格式錯誤');
+            responseSend(initResponseData(res, 1000));
+            return;
+        }
+
+        await dataSource.transaction(async manager => {
+            const organizer = await manager.findOne(OrganizerEntity, {
+                where: {
+                    user_id: userId,
+                    status: 1,
+                    is_deleted: false
+                }
+            });
+
+            if (!organizer) {
+                logger.error('廠商不存在或尚未通過驗證');
+                responseSend(initResponseData(res, 1019));
+                return;
+            }
+
+            const activity = await manager.findOne(ActivityEntity, {
+                where: { id: activity_id }
+            });
+
+            if (!activity) {
+                logger.error('無此活動');
+                responseSend(initResponseData(res, 3001));
+                return;
+            }
+            if (activity.organizer_id !== organizer.id) {
+                logger.error('無權限刪除該活動');
+                responseSend(initResponseData(res, 3003));
+                return;
+            }
+            // 檢查活動狀態
+            if (NON_EDITABLE_ACTIVITY_STATUSES.includes(activity.status)) {
+                logger.error('活動狀態為開賣、取消或結束，禁止異動');
+                responseSend(initResponseData(res, 3003)); // 活動已取消或結束，禁止異動
+            }
+
+            // 檢查是否已有訂單
+            const hasOrders = await manager
+                .createQueryBuilder(OrderEntity, 'order')
+                .where('order.showtime_id = :showtime_id', { showtime_id })
+                .getExists();
+
+            if (hasOrders) {
+                logger.error('該場次已有成立的訂單，無法修改');
+                responseSend(initResponseData(res, 3009)); // 已有訂單，禁止更動
+                return;
+            }
+
+            const showtime = await manager
+                .createQueryBuilder(ShowtimesEntity, 'showtime')
+                .innerJoin('showtime.activity', 'activity')
+                .where('showtime.id = :showtime_id', { showtime_id })
+                .andWhere('activity.id = :activity_id', { activity_id })
+                .getOne();
+
+            if (!showtime) {
+                logger.error('找不到此場次');
+                responseSend(initResponseData(res, 3004));
+                return;
+            }
+            // 刪除活動section
+            await manager.delete(ShowtimeSectionsEntity, {
+                activity_id,
+                showtime: { id: showtime.id }
+            });
+            // 刪除活動場次
+            await manager.delete(ShowtimesEntity, { id: showtime.id });
+
+            try {
+                await seatInventoryService.clearActivitySeats(showtime.id);
+            } catch (error) {
+                logger.warn(`清除 Redis 場次失敗，不影響資料庫：${(error as Error).message}`);
+            }
+        });
+
+        logger.info('活動場次刪除成功');
         responseSend(initResponseData(res, 2000));
     } catch (error) {
         logger.error('刪除活動場次錯誤:', error);
@@ -925,7 +1029,74 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
 // 取得票券座位資料 (驗證票券資料用)
 export async function getTicket(req: JWTRequest, res: Response, next: NextFunction) {
     try {
-        responseSend(initResponseData(res, 2000));
+        const ticketId = req.params.ticket_id;
+        const user = getAuthUser(req);
+        const userId = user.id;
+
+        if (isNotValidUuid(ticketId)) {
+            logger.error('票券Id格式錯誤');
+            responseSend(initResponseData(res, 1000));
+            return;
+        }
+
+        const accessCheck = await dataSource
+            .getRepository(TicketEntity)
+            .createQueryBuilder('ticket')
+            .innerJoin('ticket.order', 'order')
+            .innerJoin('order.showtime', 'showtime')
+            .innerJoin('showtime.activity', 'activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .innerJoin('organizer.user', 'user')
+            .where('ticket.id = :ticketId', { ticketId })
+            .andWhere('organizer.user_id = :userId', { userId })
+            .getExists();
+
+        if (!accessCheck) {
+            logger.error('無權限查看該票券或票券不存在');
+            responseSend(initResponseData(res, 1624));
+            return;
+        }
+
+        const ticket = await dataSource
+            .getRepository(TicketEntity)
+            .createQueryBuilder('ticket')
+            .leftJoinAndSelect('ticket.orderTicket', 'orderTicket')
+            .leftJoinAndSelect('orderTicket.section', 'section')
+            .leftJoinAndSelect('section.showtime', 'showtime')
+            .leftJoin('section.site', 'site')
+            .leftJoinAndSelect('section.activity', 'activity')
+            .leftJoin('activity.organizer', 'organizer')
+            .select([
+                'ticket.id AS id',
+                'activity.name AS activity_name',
+                'showtime.start_time AS start_at',
+                'site.name AS location',
+                'site.address AS address',
+                'organizer.name AS organizer_name',
+                'section.section AS section_name',
+                'ticket.status AS use_state'
+            ])
+            .where('ticket.id = :ticketId', { ticketId })
+            .getRawOne();
+
+        if (!ticket) {
+            logger.error('票券不存在');
+            responseSend(initResponseData(res, 1624));
+            return;
+        }
+
+        const formattedData = {
+            id: ticket.id,
+            activity_name: ticket.activity_name,
+            start_at: formatToTaipeiDateTime(ticket.start_at), // 轉為local time
+            location: ticket.location,
+            address: ticket.address,
+            organizer_name: ticket.organizer_name,
+            set: ticket.set,
+            use_state: ticket.use_state === 1
+        };
+
+        responseSend(initResponseData(res, 2000, formattedData));
     } catch (error) {
         logger.error('取得票券資料錯誤:', error);
         next(error);
@@ -935,7 +1106,103 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
 // 更新票券座位資料 (驗證票券資料用)
 export async function putTicket(req: JWTRequest, res: Response, next: NextFunction) {
     try {
-        responseSend(initResponseData(res, 2000));
+        const ticketId = req.params.ticket_id;
+        const user = getAuthUser(req);
+        const userId = user.id;
+        const now = dayjs();
+
+        if (isNotValidUuid(ticketId)) {
+            logger.error('票券Id格式錯誤');
+            responseSend(initResponseData(res, 1000));
+            return;
+        }
+        // 檢查活動票券是否為該廠商所主辦
+        const accessCheck = await dataSource
+            .getRepository(TicketEntity)
+            .createQueryBuilder('ticket')
+            .innerJoin('ticket.order', 'order')
+            .innerJoin('order.showtime', 'showtime')
+            .innerJoin('showtime.activity', 'activity')
+            .innerJoin('activity.organizer', 'organizer')
+            .innerJoin('organizer.user', 'user')
+            .where('ticket.id = :ticketId', { ticketId })
+            .andWhere('organizer.user_id = :userId', { userId })
+            .getExists();
+
+        if (!accessCheck) {
+            logger.error('無權限查看該票券或票券不存在');
+            responseSend(initResponseData(res, 1624));
+            return;
+        }
+
+        // 檢查票券狀態
+        const ticket = await dataSource
+            .getRepository(TicketEntity)
+            .createQueryBuilder('ticket')
+            .leftJoinAndSelect('ticket.orderTicket', 'orderTicket')
+            .leftJoinAndSelect('orderTicket.section', 'section')
+            .leftJoinAndSelect('section.showtime', 'showtime')
+            .leftJoin('section.site', 'site')
+            .leftJoinAndSelect('section.activity', 'activity')
+            .leftJoin('activity.organizer', 'organizer')
+            .select([
+                'ticket.id AS id',
+                'activity.status AS activity_status',
+                'showtime.start_time AS start_at',
+                'site.name AS location',
+                'ticket.status AS use_state'
+            ])
+            .where('ticket.id = :ticketId', { ticketId })
+            .getRawOne();
+
+        const start_at = dayjs(ticket.start_at).tz('Asia/Taipei');
+
+        if (!ticket) {
+            logger.error('票券不存在');
+            responseSend(initResponseData(res, 1624));
+            return;
+        }
+        // 檢查整體活動狀態
+        if (INVALID_ACTIVITY_STATUS.includes(ticket.activity_status)) {
+            logger.error('活動已取消或結束');
+            responseSend(initResponseData(res, 3010));
+            return;
+        }
+        // 檢查使用時間
+        if (start_at < now) {
+            logger.error('票券已過期');
+            responseSend(initResponseData(res, 3006)); // 票券已過期
+            return;
+        }
+
+        // 檢查票券狀態
+        if (ticket.use_status === TicketStatus.Used) {
+            logger.error('票券已使用，無法操作');
+            responseSend(initResponseData(res, 3011));
+            return;
+        }
+        // 增加檢查票券開放驗證的時間, 暫定抓場次開始時間前1hour
+        if (now.isBefore(start_at.subtract(1, 'hour'))) {
+            logger.error('尚未到驗證時間或入場時段');
+            responseSend(initResponseData(res, 3012)); // 尚未到驗證時間
+            return;
+        }
+
+        const result = await dataSource
+            .getRepository(TicketEntity)
+            .update({ id: ticketId }, { status: TicketStatus.Used });
+
+        if (result.affected === 0) {
+            logger.error('票券更新失敗');
+            responseSend(initResponseData(res, 1002));
+            return;
+        }
+
+        const formattedData = {
+            use_state: TicketStatus.Used === 1 ? true : false
+        };
+
+        responseSend(initResponseData(res, 2000, formattedData));
     } catch (error) {
         logger.error('更新票券資料錯誤:', error);
         next(error);
