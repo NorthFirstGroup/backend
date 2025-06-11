@@ -91,7 +91,7 @@ export async function getRecommend(req: JWTRequest, res: Response, next: NextFun
             return responseSend(initResponseData(res, 1018));
         }
 
-        return responseSend(initResponseData(res, 2000, { total_count:recommends.length, results: recommends }));
+        return responseSend(initResponseData(res, 2000, { total_count: recommends.length, results: recommends }));
     } catch (error) {
         logger.error('getRecommend 錯誤', error);
         next(error);
@@ -229,7 +229,7 @@ export async function search(req: JWTRequest, res: Response, next: NextFunction)
         // filter by areaIds: '2,8,15'
         if (location) {
             const areaIds = location.split(',').map(id => parseInt(id.trim(), 10));
-            qb.andWhere('showtime.site_id = sites.id')
+            qb.andWhere('showtime.site_id = sites.id');
             qb.andWhere('sites.area_id IN (:...areaIds)', { areaIds });
         }
 
@@ -239,7 +239,7 @@ export async function search(req: JWTRequest, res: Response, next: NextFunction)
         if (date_start && date_end) {
             qb.andWhere('activity.start_time BETWEEN :start AND :end', {
                 start: new Date(date_start as string),
-                end: new Date(date_end as string),
+                end: new Date(date_end as string)
             });
         } else if (date_start) {
             qb.andWhere('activity.start_time >= :start', { start: new Date(date_start as string) });
@@ -259,7 +259,7 @@ export async function search(req: JWTRequest, res: Response, next: NextFunction)
         };
         responseSend(responseData);
     } catch (error) {
-        logger.error(`搜尋活動錯誤：${error}`)
-        next(error)
+        logger.error(`搜尋活動錯誤：${error}`);
+        next(error);
     }
 }

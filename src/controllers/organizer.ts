@@ -52,11 +52,7 @@ const ALLOWED_MIME_TYPES = {
 } as const;
 type AllowedMimeTypes = keyof typeof ALLOWED_MIME_TYPES;
 
-export const NON_EDITABLE_ACTIVITY_STATUSES = [
-    ActivityStatus.Cancel,
-    ActivityStatus.Finish,
-    ActivityStatus.OnGoing,
-  ];
+export const NON_EDITABLE_ACTIVITY_STATUSES = [ActivityStatus.Cancel, ActivityStatus.Finish, ActivityStatus.OnGoing];
 
 const INVALID_ACTIVITY_STATUS = [ActivityStatus.Cancel, ActivityStatus.Finish];
 /**
@@ -106,7 +102,7 @@ const siteValidator = async (reqBody: any) => {
 
 export function formatToTaipeiDateTime(dateStr: string): string {
     return dayjs(dateStr).tz('Asia/Taipei').format('YYYY/M/D HH:mm');
-  }
+}
 
 /** 上傳圖片 */
 export async function postUploadImage(req: JWTRequest, res: Response, next: NextFunction) {
@@ -960,17 +956,17 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
             if (!organizer) {
                 logger.error('廠商不存在或尚未通過驗證');
                 responseSend(initResponseData(res, 1019));
-                return;               
+                return;
             }
 
             const activity = await manager.findOne(ActivityEntity, {
-                where: { id: activity_id}
+                where: { id: activity_id }
             });
 
             if (!activity) {
                 logger.error('無此活動');
                 responseSend(initResponseData(res, 3001));
-                return;                
+                return;
             }
             if (activity.organizer_id !== organizer.id) {
                 logger.error('無權限刪除該活動');
@@ -981,10 +977,10 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
             if (NON_EDITABLE_ACTIVITY_STATUSES.includes(activity.status)) {
                 logger.error('活動狀態為開賣、取消或結束，禁止異動');
                 responseSend(initResponseData(res, 3003)); // 活動已取消或結束，禁止異動
-            }            
+            }
 
             // 檢查是否已有訂單
-                const hasOrders = await manager
+            const hasOrders = await manager
                 .createQueryBuilder(OrderEntity, 'order')
                 .where('order.showtime_id = :showtime_id', { showtime_id })
                 .getExists();
@@ -996,12 +992,12 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
             }
 
             const showtime = await manager
-            .createQueryBuilder(ShowtimesEntity, 'showtime')
-            .innerJoin('showtime.activity', 'activity')
-            .where('showtime.id = :showtime_id', { showtime_id })
-            .andWhere('activity.id = :activity_id', { activity_id })
-            .getOne();
-    
+                .createQueryBuilder(ShowtimesEntity, 'showtime')
+                .innerJoin('showtime.activity', 'activity')
+                .where('showtime.id = :showtime_id', { showtime_id })
+                .andWhere('activity.id = :activity_id', { activity_id })
+                .getOne();
+
             if (!showtime) {
                 logger.error('找不到此場次');
                 responseSend(initResponseData(res, 3004));
@@ -1011,7 +1007,7 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
             await manager.delete(ShowtimeSectionsEntity, {
                 activity_id,
                 showtime: { id: showtime.id }
-              });
+            });
             // 刪除活動場次
             await manager.delete(ShowtimesEntity, { id: showtime.id });
 
@@ -1019,9 +1015,9 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
                 await seatInventoryService.clearActivitySeats(showtime.id);
             } catch (error) {
                 logger.warn(`清除 Redis 場次失敗，不影響資料庫：${(error as Error).message}`);
-            }             
+            }
         });
-        
+
         logger.info('活動場次刪除成功');
         responseSend(initResponseData(res, 2000));
     } catch (error) {
@@ -1054,12 +1050,12 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
             .where('ticket.id = :ticketId', { ticketId })
             .andWhere('organizer.user_id = :userId', { userId })
             .getExists();
-        
+
         if (!accessCheck) {
             logger.error('無權限查看該票券或票券不存在');
             responseSend(initResponseData(res, 1624));
             return;
-            }
+        }
 
         const ticket = await dataSource
             .getRepository(TicketEntity)
@@ -1080,15 +1076,15 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
                 'section.section AS section_name',
                 'ticket.status AS use_state'
             ])
-            .where('ticket.id = :ticketId', {ticketId})
+            .where('ticket.id = :ticketId', { ticketId })
             .getRawOne();
 
         if (!ticket) {
             logger.error('票券不存在');
             responseSend(initResponseData(res, 1624));
             return;
-            }
-        
+        }
+
         const formattedData = {
             id: ticket.id,
             activity_name: ticket.activity_name,
@@ -1097,9 +1093,9 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
             address: ticket.address,
             organizer_name: ticket.organizer_name,
             set: ticket.set,
-            use_state: ticket.use_state === 1,
+            use_state: ticket.use_state === 1
         };
-        
+
         responseSend(initResponseData(res, 2000, formattedData));
     } catch (error) {
         logger.error('取得票券資料錯誤:', error);
@@ -1132,13 +1128,13 @@ export async function putTicket(req: JWTRequest, res: Response, next: NextFuncti
             .where('ticket.id = :ticketId', { ticketId })
             .andWhere('organizer.user_id = :userId', { userId })
             .getExists();
-        
+
         if (!accessCheck) {
             logger.error('無權限查看該票券或票券不存在');
             responseSend(initResponseData(res, 1624));
             return;
-            }
-        
+        }
+
         // 檢查票券狀態
         const ticket = await dataSource
             .getRepository(TicketEntity)
@@ -1156,53 +1152,55 @@ export async function putTicket(req: JWTRequest, res: Response, next: NextFuncti
                 'site.name AS location',
                 'ticket.status AS use_state'
             ])
-            .where('ticket.id = :ticketId', {ticketId})
+            .where('ticket.id = :ticketId', { ticketId })
             .getRawOne();
-        
+
         const start_at = dayjs(ticket.start_at).tz('Asia/Taipei');
 
         if (!ticket) {
             logger.error('票券不存在');
             responseSend(initResponseData(res, 1624));
             return;
-            }
+        }
         // 檢查整體活動狀態
         if (INVALID_ACTIVITY_STATUS.includes(ticket.activity_status)) {
             logger.error('活動已取消或結束');
             responseSend(initResponseData(res, 3010));
-            return;            
+            return;
         }
         // 檢查使用時間
         if (start_at < now) {
             logger.error('票券已過期');
             responseSend(initResponseData(res, 3006)); // 票券已過期
             return;
-          }
+        }
 
         // 檢查票券狀態
         if (ticket.use_status === TicketStatus.Used) {
             logger.error('票券已使用，無法操作');
             responseSend(initResponseData(res, 3011));
-            return;            
-        }          
+            return;
+        }
         // 增加檢查票券開放驗證的時間, 暫定抓場次開始時間前1hour
-        if (now.isBefore(start_at .subtract(1, 'hour'))) {
+        if (now.isBefore(start_at.subtract(1, 'hour'))) {
             logger.error('尚未到驗證時間或入場時段');
             responseSend(initResponseData(res, 3012)); // 尚未到驗證時間
             return;
-          }
-        
-        const result = await dataSource.getRepository(TicketEntity).update({ id: ticketId }, { status: TicketStatus.Used })
-        
+        }
+
+        const result = await dataSource
+            .getRepository(TicketEntity)
+            .update({ id: ticketId }, { status: TicketStatus.Used });
+
         if (result.affected === 0) {
             logger.error('票券更新失敗');
             responseSend(initResponseData(res, 1002));
-            return;        
-        }        
-        
-        const formattedData = {
-            use_state: TicketStatus.Used=== 1 ? true : false
+            return;
         }
+
+        const formattedData = {
+            use_state: TicketStatus.Used === 1 ? true : false
+        };
 
         responseSend(initResponseData(res, 2000, formattedData));
     } catch (error) {

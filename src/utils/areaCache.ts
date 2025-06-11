@@ -7,9 +7,9 @@ const logger = getLogger('AreaCacheService');
 
 export interface AreaCacheData {
     /** 對應 Area 資料表的 id */
-    id: number
+    id: number;
     /** 地區名稱 */
-    name: string
+    name: string;
 }
 
 /** 區域快取機制 */
@@ -41,8 +41,8 @@ class AreaCache {
             // 批次存入 Redis
             const multi = this.redis.multi();
             const areaCache: AreaCacheData[] = areas.map(area => {
-                multi.hset(this.REDIS_KEY, area.id, area.name)
-                return { id: area.id, name: area.name }
+                multi.hset(this.REDIS_KEY, area.id, area.name);
+                return { id: area.id, name: area.name };
             });
             await multi.exec();
 
@@ -61,12 +61,11 @@ class AreaCache {
             const areasRedis = await this.redis.hgetall(this.REDIS_KEY);
             let areas: AreaCacheData[] = [];
             if (areasRedis) {
-                areas = Object.entries(areasRedis).map(([id, name])=> ({
+                areas = Object.entries(areasRedis).map(([id, name]) => ({
                     id: Number(id), // 將字串 ID 轉為數字
-                    name,
+                    name
                 }));
-            } else
-                areas = await this.initAreasToRedis();
+            } else areas = await this.initAreasToRedis();
 
             return areas;
         } catch (error) {
@@ -92,13 +91,11 @@ class AreaCache {
     async getAreaNameById(id: number | number[]): Promise<string | string[] | null> {
         try {
             const areas = await this.getAreas();
-            if (Array.isArray(id))
-                return areas.filter((a) => id.includes(a.id)).map((a) => a.name);
+            if (Array.isArray(id)) return areas.filter(a => id.includes(a.id)).map(a => a.name);
 
-            const area = areas.find((a) => a.id === id);
+            const area = areas.find(a => a.id === id);
 
-            if (!area)
-                return null;
+            if (!area) return null;
 
             return area.name;
         } catch (error) {
@@ -114,10 +111,9 @@ class AreaCache {
     async getAreaIdByName(name: string): Promise<number | null> {
         try {
             const areas = await this.getAreas();
-            const area = areas.find((a) => a.name === name);
+            const area = areas.find(a => a.name === name);
 
-            if (!area)
-                return null;
+            if (!area) return null;
 
             return area.id;
         } catch (error) {
@@ -133,10 +129,8 @@ class AreaCache {
     async isNotValidAreaId(id: number | number[]): Promise<boolean> {
         try {
             const areas = await this.getAreas();
-            if (Array.isArray(id))
-                return !id.every((i) => areas.some((a) => i === a.id));
-            else
-                return !areas.some((a) => id === a.id);
+            if (Array.isArray(id)) return !id.every(i => areas.some(a => i === a.id));
+            else return !areas.some(a => id === a.id);
         } catch (error) {
             logger.error(`isNotValidAreaId Error: ${error instanceof Error ? error.message : String(error)}`);
             throw error;

@@ -8,12 +8,12 @@ import {
     Index,
     ManyToOne,
     JoinColumn,
-    OneToMany,
-} from 'typeorm'
-import { OrderEntity } from './Order'
-import { TicketEntity } from './Ticket'
-import { DbEntity } from '../constants/dbEntity'
-import { ShowtimeSectionsEntity } from './ShowtimeSections'
+    OneToMany
+} from 'typeorm';
+import { OrderEntity } from './Order';
+import { TicketEntity } from './Ticket';
+import { DbEntity } from '../constants/dbEntity';
+import { ShowtimeSectionsEntity } from './ShowtimeSections';
 
 @Entity(DbEntity.OrderTicket)
 @Index(['created_at'])
@@ -21,55 +21,55 @@ import { ShowtimeSectionsEntity } from './ShowtimeSections'
 export class OrderTicketEntity {
     /** 訂單區域id，主鍵 */
     @PrimaryGeneratedColumn('uuid')
-    id!: string
+    id!: string;
 
     /** 訂單id，關聯order表，禁止為空 */
     @Column({ type: 'integer', nullable: false })
-    order_id!: number
+    order_id!: number;
 
     /** 座位區域id，禁止為空 */
     @Column({ type: 'uuid', nullable: false })
-    section_id!: string
+    section_id!: string;
 
     /** 區域票券單價，禁止為空 */
     @Column({ type: 'numeric', nullable: false })
-    price!: number
+    price!: number;
 
     /** 購買張數，禁止為空 */
     @Column({ type: 'integer', nullable: false })
-    quantity!: number
+    quantity!: number;
 
     /** 票劵類型，預設為1（電子票券），禁止為空 */
     @Column({ type: 'smallint', nullable: false, default: 1 })
-    ticket_type!: number
+    ticket_type!: number;
 
     /** 票券建立時間，預設為當前時間，禁止為空 */
     @CreateDateColumn({
         type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
-        nullable: false,
+        nullable: false
     })
-    created_at!: Date
+    created_at!: Date;
 
     /** 資料更新時間，預設為當前時間，禁止為空 */
     @UpdateDateColumn({
         type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
-        nullable: false,
+        nullable: false
     })
-    updated_at!: Date
+    updated_at!: Date;
 
     /** 訂單關聯 */
     @ManyToOne(() => OrderEntity, order => order.orderTickets)
     @JoinColumn({ name: 'order_id', referencedColumnName: 'id' })
-    order!: OrderEntity
+    order!: OrderEntity;
 
     /** 座位區域關聯 */
-    @ManyToOne(()=> ShowtimeSectionsEntity)
+    @ManyToOne(() => ShowtimeSectionsEntity)
     @JoinColumn({ name: 'section_id', referencedColumnName: 'id' })
-    section!: ShowtimeSectionsEntity
+    section!: ShowtimeSectionsEntity;
 
     /** 一張訂單有多張票券 */
     @OneToMany(() => TicketEntity, ticket => ticket.orderTicket)
-    tickets!: TicketEntity[]
+    tickets!: TicketEntity[];
 }

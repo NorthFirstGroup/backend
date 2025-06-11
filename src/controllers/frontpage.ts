@@ -107,7 +107,7 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
                 'category.name AS category', // 取得 category.name 並命名為 category
                 'activity.start_time AS start_time',
                 'activity.end_time AS end_time',
-                'showtimeSection.vacancy AS vacancy',
+                'showtimeSection.vacancy AS vacancy'
             ])
             .getRawMany();
 

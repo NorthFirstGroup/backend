@@ -7,13 +7,13 @@ import {
     Index,
     ManyToOne,
     OneToMany,
-    JoinColumn,
-} from 'typeorm'
-import { DbEntity } from '../constants/dbEntity'
-import { UserEntity } from './User'
-import { OrderTicketEntity } from './OrderTicket'
-import { TicketEntity } from './Ticket'
-import { ShowtimesEntity } from './Showtimes'
+    JoinColumn
+} from 'typeorm';
+import { DbEntity } from '../constants/dbEntity';
+import { UserEntity } from './User';
+import { OrderTicketEntity } from './OrderTicket';
+import { TicketEntity } from './Ticket';
+import { ShowtimesEntity } from './Showtimes';
 
 /** 訂單狀態類型 */
 export enum OrderStatus {
@@ -22,7 +22,7 @@ export enum OrderStatus {
     /** 已完成 */
     COMPLETED = 'COMPLETED',
     /** 已取消 */
-    CANCELLED = 'CANCELLED',
+    CANCELLED = 'CANCELLED'
 }
 
 export enum PaymentMethod {
@@ -37,7 +37,7 @@ export enum PaymentMethod {
     /** 銀行轉帳 */
     BANK_TRANSFER = 'BANK_TRANSFER',
     /** 其他支付方式 */
-    OTHER = 'OTHER',
+    OTHER = 'OTHER'
 }
 
 export enum PaymentStatus {
@@ -52,7 +52,7 @@ export enum PaymentStatus {
     /** 支付超時 (在規定時間內未完成支付) */
     EXPIRED = 'EXPIRED',
     /** 支付取消 (用戶主動取消支付流程) */
-    CANCELLED = 'CANCELLED',
+    CANCELLED = 'CANCELLED'
     /** 部分退款 (訂單部分退款) */
     //PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED', // 可選
 }
@@ -65,7 +65,7 @@ export enum PickupStatus {
     /** 已失效 (例如，因活動取消或退款導致票券失效) */
     INVALID = 'INVALID',
     /** 待處理 (如果需要人工介入處理取票，可使用此狀態) */
-    PROCESSING = 'PROCESSING', // 可選
+    PROCESSING = 'PROCESSING' // 可選
 }
 
 @Entity(DbEntity.Order)
@@ -76,19 +76,19 @@ export enum PickupStatus {
 export class OrderEntity {
     /** 訂單id，主鍵 */
     @PrimaryGeneratedColumn()
-    id!: number
+    id!: number;
 
     /** 用戶id，關聯user表，禁止為空 */
     @Column({ type: 'uuid', nullable: false })
-    user_id!: string
+    user_id!: string;
 
     /** 場次id，關聯showtimes表，禁止為空 */
     @Column({ type: 'uuid', nullable: false })
-    showtime_id!: string
+    showtime_id!: string;
 
     /** 訂單編號，唯一值，禁止為空 */
     @Column({ type: 'varchar', length: 20, unique: true, nullable: false })
-    order_number!: string
+    order_number!: string;
 
     /** 訂單狀態，預設為PROCESSING，可選值：PROCESSING|COMPLETED|CANCELLED，禁止為空 */
     @Column({
@@ -96,17 +96,17 @@ export class OrderEntity {
         length: 20,
         nullable: false,
         default: OrderStatus.PROCESSING,
-        enum: OrderStatus,
+        enum: OrderStatus
     })
-    status!: OrderStatus
+    status!: OrderStatus;
 
     /** 購買張數，禁止為空 */
     @Column({ type: 'integer', nullable: false })
-    total_count!: number
+    total_count!: number;
 
     /** 總金額，精度10位小數2位，禁止為空 */
     @Column({ type: 'numeric', precision: 10, scale: 2, nullable: false })
-    total_price!: number
+    total_price!: number;
 
     /** 付款方式，禁止為空 */
     @Column({
@@ -114,9 +114,9 @@ export class OrderEntity {
         length: 20,
         nullable: false,
         default: PaymentMethod.CREDIT_CARD,
-        enum: PaymentMethod,
+        enum: PaymentMethod
     })
-    payment_method!: PaymentMethod
+    payment_method!: PaymentMethod;
 
     /** 付款狀態，禁止為空 */
     @Column({
@@ -124,7 +124,7 @@ export class OrderEntity {
         length: 20,
         nullable: false,
         default: PaymentStatus.PENDING,
-        enum: PaymentStatus,
+        enum: PaymentStatus
     })
     payment_status!: PaymentStatus;
 
@@ -134,7 +134,7 @@ export class OrderEntity {
         length: 20,
         nullable: false,
         default: PickupStatus.NOT_PICKED_UP,
-        enum: PickupStatus,
+        enum: PickupStatus
     })
     pickup_status!: PickupStatus;
 
@@ -142,31 +142,31 @@ export class OrderEntity {
     @CreateDateColumn({
         type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
-        nullable: false,
+        nullable: false
     })
-    created_at!: Date
+    created_at!: Date;
 
     /** 付款時間，可為空 */
     @Column({ type: 'timestamptz', nullable: true })
-    paid_at!: Date
+    paid_at!: Date;
 
     /** 資料更新時間，預設為當前時間，禁止為空 */
     @UpdateDateColumn({
         type: 'timestamptz',
         default: () => 'CURRENT_TIMESTAMP',
-        nullable: false,
+        nullable: false
     })
-    updated_at!: Date
+    updated_at!: Date;
 
     /** 一個用戶有多個訂單 */
     @ManyToOne(() => UserEntity, user => user.orders)
     @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
-    user!: UserEntity
+    user!: UserEntity;
 
     /** 一個場次有多個訂單 */
     @ManyToOne(() => ShowtimesEntity, showtime => showtime.orders)
     @JoinColumn({ name: 'showtime_id', referencedColumnName: 'id' })
-    showtime!: ShowtimesEntity
+    showtime!: ShowtimesEntity;
 
     /** 一張訂單有多個區域票券記錄 */
     @OneToMany(() => OrderTicketEntity, orderTicket => orderTicket.order)

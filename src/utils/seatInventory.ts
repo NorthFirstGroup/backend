@@ -37,7 +37,9 @@ export class SeatInventoryService {
             await multi.exec();
             logger.info(`成功初始化場次 ${showtimeId} 的座位庫存到 Redis.`);
         } catch (error) {
-            logger.error(`初始化場次 ${showtimeId} 座位庫存失敗: ${error instanceof Error ? error.message : String(error)}`);
+            logger.error(
+                `初始化場次 ${showtimeId} 座位庫存失敗: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
@@ -64,9 +66,10 @@ export class SeatInventoryService {
 
             logger.info(`成功預扣場次 ${showtimeId} 區域 ${zone} 的 ${quantity} 個座位。剩餘：${remainingSeats}`);
             return true;
-
         } catch (error) {
-            logger.error(`預扣場次 ${showtimeId} 區域 ${zone} 的 ${quantity} 個座位失敗: ${error instanceof Error ? error.message : String(error)}`);
+            logger.error(
+                `預扣場次 ${showtimeId} 區域 ${zone} 的 ${quantity} 個座位失敗: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
@@ -83,7 +86,9 @@ export class SeatInventoryService {
             await this.redis.hincrby(redisKey, zone, quantity);
             logger.info(`成功歸還場次 ${showtimeId} 區域 ${zone} 的 ${quantity} 個座位。`);
         } catch (error) {
-            logger.error(`歸還場次 ${showtimeId} 區域 ${zone} 的 ${quantity} 個座位失敗: ${error instanceof Error ? error.message : String(error)}`);
+            logger.error(
+                `歸還場次 ${showtimeId} 區域 ${zone} 的 ${quantity} 個座位失敗: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
@@ -100,7 +105,9 @@ export class SeatInventoryService {
             const seats = await this.redis.hget(redisKey, zone);
             return seats ? parseInt(seats, 10) : 0;
         } catch (error) {
-            logger.error(`獲取場次 ${showtimeId} 區域 ${zone} 可用座位失敗: ${error instanceof Error ? error.message : String(error)}`);
+            logger.error(
+                `獲取場次 ${showtimeId} 區域 ${zone} 可用座位失敗: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }
@@ -148,7 +155,9 @@ export class SeatInventoryService {
             await this.redis.del(redisKey);
             logger.info(`成功清除場次 ${showtimeId} 的座位庫存資料`);
         } catch (error) {
-            logger.error(`清除場次 ${showtimeId} 座位庫存失敗: ${error instanceof Error ? error.message : String(error)}`);
+            logger.error(
+                `清除場次 ${showtimeId} 座位庫存失敗: ${error instanceof Error ? error.message : String(error)}`
+            );
             throw error;
         }
     }

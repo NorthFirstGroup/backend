@@ -2,23 +2,22 @@
 // 補: 場地與場次會有一對多的關係 (一個場地可以辦多個場次)
 
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
-  ManyToOne,
-  JoinColumn,
-  OneToMany
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    Index,
+    ManyToOne,
+    JoinColumn,
+    OneToMany
 } from 'typeorm';
-import { ActivityEntity } from './Activity'
-import { AreaEntity } from './Area'
+import { ActivityEntity } from './Activity';
+import { AreaEntity } from './Area';
 import { ShowtimesEntity } from './Showtimes';
 import { ShowtimeSectionsEntity } from './ShowtimeSections';
 
 import { DbEntity } from '../constants/dbEntity';
-
 
 @Entity(DbEntity.ActivitySite)
 export class ActivitySiteEntity {
@@ -40,7 +39,6 @@ export class ActivitySiteEntity {
 
     // 活動地址
     @Column({ type: 'varchar', length: 100, nullable: false })
-    
     address!: string;
 
     // 分區座位示意圖網址
@@ -54,9 +52,9 @@ export class ActivitySiteEntity {
     // 分區票價設定，含區域、單價、人數限制
     @Column({ type: 'jsonb', nullable: false })
     prices!: {
-      section: string;
-      price: number;
-      capacity: number;
+        section: string;
+        price: number;
+        capacity: number;
     }[];
 
     // 資料創建時間
@@ -74,7 +72,7 @@ export class ActivitySiteEntity {
     activity!: ActivityEntity;
 
     @ManyToOne(() => AreaEntity)
-    @JoinColumn({ name: 'area_id', referencedColumnName: 'id'  })
+    @JoinColumn({ name: 'area_id', referencedColumnName: 'id' })
     // 區域關聯
     area!: AreaEntity;
 
@@ -83,8 +81,5 @@ export class ActivitySiteEntity {
     showtimes!: ShowtimesEntity[];
 
     @OneToMany(() => ShowtimeSectionsEntity, section => section.site)
-    showtimeSections!: ShowtimeSectionsEntity[]; 
+    showtimeSections!: ShowtimeSectionsEntity[];
 }
-
-
-
