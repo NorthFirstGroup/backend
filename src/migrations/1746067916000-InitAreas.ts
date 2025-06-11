@@ -22,18 +22,14 @@ const taiwanAreas = [
     '台東縣',
     '澎湖縣',
     '金門縣',
-    '連江縣',
-]
+    '連江縣'
+];
 
 /** 初始地區種子資料，class名必須為時間戳13位格式，否則會出錯  */
 export class InitAreas1746067916000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // 檢查是否已存在資料
-        const count = await queryRunner.manager
-            .createQueryBuilder()
-            .select()
-            .from('Area', 'area')
-            .getCount();
+        const count = await queryRunner.manager.createQueryBuilder().select().from('Area', 'area').getCount();
 
         if (count === 0) {
             // 插入台灣地區資料
@@ -41,17 +37,13 @@ export class InitAreas1746067916000 implements MigrationInterface {
                 .createQueryBuilder()
                 .insert()
                 .into('Area')
-                .values(taiwanAreas.map((name) => ({ name })))
+                .values(taiwanAreas.map(name => ({ name })))
                 .execute();
         }
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         // 回滾操作：刪除所有 Area 資料
-        await queryRunner.manager
-            .createQueryBuilder()
-            .delete()
-            .from('Area')
-            .execute();
+        await queryRunner.manager.createQueryBuilder().delete().from('Area').execute();
     }
 }

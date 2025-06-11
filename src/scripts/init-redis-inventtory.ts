@@ -1,5 +1,5 @@
 import { dataSource } from '../db/data-source';
-import { redis } from '../db/redis-source'
+import { redis } from '../db/redis-source';
 
 import { ShowtimesEntity } from '../entities/Showtimes';
 import getLogger from '../utils/logger';
@@ -13,14 +13,14 @@ export async function initRedisShowtimeInventory(showtimeId: string) {
         // move to seeds (獨立使用腳本要打開)
         // await dataSource.initialize();
         // await redis.ping()
-        initSeatInventoryService(redis)
+        initSeatInventoryService(redis);
 
         const showtimeRepository = dataSource.getRepository(ShowtimesEntity);
 
         // 從資料庫中獲取場次及其所有區塊設定
         const showtime = await showtimeRepository.findOne({
             where: { id: showtimeId },
-            relations: ['showtimeSections'], 
+            relations: ['showtimeSections']
         });
 
         if (!showtime) {
@@ -42,17 +42,17 @@ export async function initRedisShowtimeInventory(showtimeId: string) {
         await seatInventoryService.initializeActivitySeats(showtime.id, zonesToInitialize);
     } catch (error) {
         logger.error(`初始化場次 ${showtimeId} 的 Redis 庫存時發生錯誤:`, error);
-    //move to seeds (獨立使用腳本要打開)
-    // } finally {
-    //     // 關閉資料庫連接
-    //     if (dataSource.isInitialized) {
-    //         await dataSource.destroy();
-    //         logger.info('資料庫 DataSource 已關閉。');
-    //     }
+        //move to seeds (獨立使用腳本要打開)
+        // } finally {
+        //     // 關閉資料庫連接
+        //     if (dataSource.isInitialized) {
+        //         await dataSource.destroy();
+        //         logger.info('資料庫 DataSource 已關閉。');
+        //     }
 
-    //     // 關閉 Redis 客戶端連接
-    //     redis.quit();
-    //     logger.info('Redis 已斷開連接。');
+        //     // 關閉 Redis 客戶端連接
+        //     redis.quit();
+        //     logger.info('Redis 已斷開連接。');
     }
 }
 

@@ -1,21 +1,20 @@
 // 活動場次明細表，各分區票價資料包含座位數與剩餘數量
 
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  CreateDateColumn, 
-  UpdateDateColumn, 
-  ManyToOne, 
-  JoinColumn, 
-  Index 
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    CreateDateColumn,
+    UpdateDateColumn,
+    ManyToOne,
+    JoinColumn,
+    Index
 } from 'typeorm';
 import { ShowtimesEntity } from './Showtimes';
 import { ActivitySiteEntity } from './ActivitySite';
 import { ActivityEntity } from './Activity';
 
 import { DbEntity } from '../constants/dbEntity';
-
 
 /** 活動場次明細表，各分區票價資料包含座位數與剩餘數量 */
 @Entity(DbEntity.ShowtimeSections)
@@ -62,10 +61,7 @@ export class ShowtimeSectionsEntity {
     site!: ActivitySiteEntity;
 
     // 與 Activity 的多對一關聯
-    @ManyToOne(() => ActivityEntity, activity => activity.showtimeSections )
+    @ManyToOne(() => ActivityEntity, activity => activity.showtimeSections)
     @JoinColumn({ name: 'activity_id', referencedColumnName: 'id' })
     activity!: ActivityEntity;
 }
-
-
-
