@@ -31,4 +31,5 @@ router.get('/order/:order_number', auth, orderController.getOrderDetail);
 router.get('/orders', auth, orderController.getUserOrders);
 router.get('/ticket/:ticket_id', auth, orderController.getTicketDetail);
 router.post('/apply-as-organizer', auth, userController.applyAsOrganizer);
+router.post('/ecpayNotify', orderController.getECPayNotify);
 export default router;

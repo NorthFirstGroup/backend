@@ -8,6 +8,7 @@ import { ActivityTypeEntity } from '../entities/ActivityType';
 import { dataSource } from '../db/data-source';
 import { ShowtimeSectionsEntity } from '../entities/ShowtimeSections';
 import { ActivityStatus } from '../enums/activity';
+import dayjs from 'dayjs';
 
 const logger = getLogger('Activity');
 
@@ -172,20 +173,24 @@ export async function getShowtime(req: JWTRequest, res: Response, next: NextFunc
 
         // 轉換成回傳資料格式
         const result = {
-            activity_id: String(showtime.activity.id),
-            name: showtime.activity.name,
-            showtime_id: showtime.id,
-            start_time: Math.floor(new Date(showtime.start_time).getTime() / 1000),
-            location: showtime.site.name,
-            address: showtime.site.address,
-            seat_image: showtime.seat_image,
-            seats: showtime.showtimeSections.map((section: ShowtimeSectionsEntity) => ({
-                id: section.id,
-                section: section.section,
-                price: section.price,
-                capacity: section.capacity,
-                vacancy: section.vacancy
-            }))
+            activity: {
+                id: showtime.activity.id,
+                name: showtime.activity.name,
+            },
+            showtime: {
+                id: showtime.id,
+                start_time: dayjs(showtime.start_time).unix(),
+                location: showtime.site.name,
+                address: showtime.site.address,
+                seat_image: showtime.seat_image,
+                seats: showtime.showtimeSections.map((section: ShowtimeSectionsEntity) => ({
+                    id: section.id,
+                    section: section.section,
+                    price: section.price,
+                    capacity: section.capacity,
+                    vacancy: section.vacancy
+                }))
+            }
         };
 
         return responseSend(initResponseData(res, 2000, result));
