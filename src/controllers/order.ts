@@ -17,6 +17,7 @@ import { TicketEntity } from '../entities/Ticket';
 import { DailySequenceEntity } from '../entities/DailySequence';
 
 import { seatInventoryService } from '../utils/seatInventory';
+import { createPaymentForm, verifyPayment } from '@/utils/ecPayAdapter';
 
 const logger = getLogger('User');
 
@@ -482,6 +483,15 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
             certificateUrl: ticket.certificate_url
         }));
 
+        let paymentFormUrl: string | undefined = undefined;
+        if (order.payment_status === PaymentStatus.PENDING) {
+            paymentFormUrl = await createPaymentForm(
+                order.order_number,
+                Number(order.total_price),
+                order.showtime.activity.name
+            );
+        }
+
         const responseData = initResponseData(res, 2000);
         responseData.data = {
             // orderId: order_id,
@@ -503,12 +513,14 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
             ticketCount: order.total_count,
             totalPrice: parseFloat(order.total_price.toString()),
             paymentMethod: order.payment_method === PaymentMethod.CREDIT_CARD ? '信用卡' : order.payment_method, // Mapping PaymentMethod enum to display string
+            paymentStatus: order.payment_status,
             seats: seats,
             contact: {
                 name: user.nick_name,
                 phone: user.phone,
                 email: user.email
-            }
+            },
+            paymentFormUrl
         };
 
         responseSend(responseData);
@@ -714,6 +726,32 @@ export async function getTicketDetail(req: JWTRequest, res: Response, next: Next
         responseSend(responseData);
     } catch (error) {
         logger.error(`取得票券詳細資訊錯誤`, error);
+        next(error);
+    }
+}
+
+/** 綠界回呼 */
+export async function getECPayNotify(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        console.log('綠界回呼:', req.body);
+        res.send('1|OK');
+        const result = verifyPayment(req.body);
+        if (!result) return;
+
+        // 設定為已付款
+        const orderRepository = dataSource.getRepository(OrderEntity);
+
+        const order = await orderRepository.findOne({
+            where: { order_number: req.body.CustomField1 }
+        });
+
+        if (!order) return;
+
+        order.payment_status = PaymentStatus.PAID;
+
+        await orderRepository.save(order);
+    } catch (error) {
+        logger.error('支付回傳錯誤:', error);
         next(error);
     }
 }
