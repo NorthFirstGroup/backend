@@ -585,7 +585,7 @@ export async function getActivityShowtimes(req: JWTRequest, res: Response, next:
         const formattedData = showtimes.map(showtime => {
             return {
                 id: showtime.id,
-                start_at: dayjs(showtime.start_time).format('YYYY/MM/DD (dd) HH:mm'),
+                start_time: dayjs(showtime.start_time).format('YYYY/MM/DD (dd) HH:mm'),
                 location: showtime.site.name,
                 address: showtime.site.address,
                 price: showtime.showtimeSections.map(section => section.price)
@@ -1069,11 +1069,11 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
             .select([
                 'ticket.id AS id',
                 'activity.name AS activity_name',
-                'showtime.start_time AS start_at',
+                'showtime.start_time AS start_time',
                 'site.name AS location',
                 'site.address AS address',
                 'organizer.name AS organizer_name',
-                'section.section AS section_name',
+                'ticket.section AS section',
                 'ticket.status AS use_state'
             ])
             .where('ticket.id = :ticketId', { ticketId })
@@ -1088,11 +1088,11 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
         const formattedData = {
             id: ticket.id,
             activity_name: ticket.activity_name,
-            start_at: formatToTaipeiDateTime(ticket.start_at), // 轉為local time
+            start_time: formatToTaipeiDateTime(ticket.start_time), // 轉為local time
             location: ticket.location,
             address: ticket.address,
             organizer_name: ticket.organizer_name,
-            set: ticket.set,
+            section: ticket.section,
             use_state: ticket.use_state === 1
         };
 
@@ -1148,14 +1148,14 @@ export async function putTicket(req: JWTRequest, res: Response, next: NextFuncti
             .select([
                 'ticket.id AS id',
                 'activity.status AS activity_status',
-                'showtime.start_time AS start_at',
+                'showtime.start_time AS start_time',
                 'site.name AS location',
                 'ticket.status AS use_state'
             ])
             .where('ticket.id = :ticketId', { ticketId })
             .getRawOne();
 
-        const start_at = dayjs(ticket.start_at).tz('Asia/Taipei');
+        const start_time = dayjs(ticket.start_time).tz('Asia/Taipei');
 
         if (!ticket) {
             logger.error('票券不存在');
@@ -1169,7 +1169,7 @@ export async function putTicket(req: JWTRequest, res: Response, next: NextFuncti
             return;
         }
         // 檢查使用時間
-        if (start_at < now) {
+        if (start_time < now) {
             logger.error('票券已過期');
             responseSend(initResponseData(res, 3006)); // 票券已過期
             return;
@@ -1182,7 +1182,7 @@ export async function putTicket(req: JWTRequest, res: Response, next: NextFuncti
             return;
         }
         // 增加檢查票券開放驗證的時間, 暫定抓場次開始時間前1hour
-        if (now.isBefore(start_at.subtract(1, 'hour'))) {
+        if (now.isBefore(start_time.subtract(1, 'hour'))) {
             logger.error('尚未到驗證時間或入場時段');
             responseSend(initResponseData(res, 3012)); // 尚未到驗證時間
             return;
