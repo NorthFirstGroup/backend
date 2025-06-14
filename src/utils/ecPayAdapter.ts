@@ -18,7 +18,7 @@ export async function createPaymentForm(orderNumber: string, totalAmount: number
             TradeDesc: 'GoTicket 購票',
             ItemName: itemName || '測試商品',
             CustomField1: orderNumber,   // 訂單編號
-            ClientBackURL: `${ClientDDNS}/order/payment/${orderNumber}`
+            ClientBackURL: `${ClientDDNS}/user/orders/${orderNumber}`
         };
 
         // 選填參數
