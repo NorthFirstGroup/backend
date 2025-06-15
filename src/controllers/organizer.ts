@@ -1069,6 +1069,7 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
             .select([
                 'ticket.id AS id',
                 'activity.name AS activity_name',
+                'showtime.id AS showtime_id',
                 'showtime.start_time AS start_time',
                 'site.name AS location',
                 'site.address AS address',
@@ -1088,6 +1089,7 @@ export async function getTicket(req: JWTRequest, res: Response, next: NextFuncti
         const formattedData = {
             id: ticket.id,
             activity_name: ticket.activity_name,
+            showtime_id: ticket.showtime_id,
             start_time: formatToTaipeiDateTime(ticket.start_time), // 轉為local time
             location: ticket.location,
             address: ticket.address,
@@ -1182,11 +1184,11 @@ export async function putTicket(req: JWTRequest, res: Response, next: NextFuncti
             return;
         }
         // 增加檢查票券開放驗證的時間, 暫定抓場次開始時間前1hour
-        if (now.isBefore(start_time.subtract(1, 'hour'))) {
-            logger.error('尚未到驗證時間或入場時段');
-            responseSend(initResponseData(res, 3012)); // 尚未到驗證時間
-            return;
-        }
+        // if (now.isBefore(start_time.subtract(1, 'hour'))) {
+        //     logger.error('尚未到驗證時間或入場時段');
+        //     responseSend(initResponseData(res, 3012)); // 尚未到驗證時間
+        //     return;
+        // }
 
         const result = await dataSource
             .getRepository(TicketEntity)
