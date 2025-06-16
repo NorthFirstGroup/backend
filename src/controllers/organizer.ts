@@ -25,24 +25,12 @@ import { transformAPIKeyToCamel } from '@/utils/APITransformer';
 import { AuthRequest } from '@/middlewares/organizer';
 import { ActivityTypeEntity } from '@/entities/ActivityType';
 import { TicketEntity } from '@/entities/Ticket';
-import { DbEntity } from '@/constants/dbEntity';
 import { TicketStatus } from '@/constants/ticket';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.locale('zh-tw');
 const logger = getLogger('Organizer');
-
-class CustomHttpError extends Error {
-    statusCode: number;
-    errorCode: number;
-    constructor(message: string, errorCode: number, statusCode: number = 400) {
-        super(message);
-        this.name = 'CustomHttpError';
-        this.errorCode = errorCode;
-        this.statusCode = statusCode;
-    }
-}
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = {
@@ -60,7 +48,20 @@ const INVALID_ACTIVITY_STATUS = [ActivityStatus.Cancel, ActivityStatus.Finish];
  * @param reqBody - The request body containing site information.
  * @returns The validated site information.
  */
-const siteValidator = async (reqBody: any) => {
+interface SiteRequestBody {
+    name: string;
+    area: string;
+    address: string;
+    seatingMapUrl: string;
+    prices: {
+        section: string;
+        price: number;
+        capacity: number;
+    }[];
+    [key: string]: unknown;
+}
+
+const siteValidator = async (reqBody: SiteRequestBody) => {
     const notValid = validator.requiredFields(reqBody, ['name', 'area', 'address', 'seatingMapUrl', 'prices']);
 
     if (notValid.length > 0) {
@@ -367,31 +368,35 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 // 55. 刪除活動
 const deleteActivity = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    const { activityId } = req.params;
+    try {
+        const { activityId } = req.params;
 
-    const activityRepo = dataSource.getRepository(ActivityEntity);
-    if (!req.activity) {
-        throw new CustomError(RespStatusCode.NO_PERMISSION);
-    }
+        const activityRepo = dataSource.getRepository(ActivityEntity);
+        if (!req.activity) {
+            throw new CustomError(RespStatusCode.NO_PERMISSION);
+        }
 
-    const orders = await dataSource
-        .getRepository(OrderEntity)
-        .createQueryBuilder('order')
-        .innerJoinAndSelect('order.showtime', 'showtime')
-        .innerJoin('showtime.activity', 'activity')
-        .where('activity.id = :activityId', { activityId })
-        .getMany();
-    if (orders.length > 0) {
-        throw new CustomError(RespStatusCode.DELETE_FAILED, '活動已經有訂單，無法刪除');
-    }
+        const orders = await dataSource
+            .getRepository(OrderEntity)
+            .createQueryBuilder('order')
+            .innerJoinAndSelect('order.showtime', 'showtime')
+            .innerJoin('showtime.activity', 'activity')
+            .where('activity.id = :activityId', { activityId })
+            .getMany();
+        if (orders.length > 0) {
+            throw new CustomError(RespStatusCode.DELETE_FAILED, '活動已經有訂單，無法刪除');
+        }
 
-    const result = await activityRepo.update(activityId, {
-        is_deleted: true
-    });
-    if (result.affected === 0) {
-        throw new CustomError(RespStatusCode.DELETE_FAILED);
+        const result = await activityRepo.update(activityId, {
+            is_deleted: true
+        });
+        if (result.affected === 0) {
+            throw new CustomError(RespStatusCode.DELETE_FAILED);
+        }
+        responseSend(initResponseData(res, 2000));
+    } catch (error) {
+        next(error);
     }
-    responseSend(initResponseData(res, 2000));
 };
 
 // organizer Site CRUD operations
@@ -934,8 +939,8 @@ export async function deleteActivityShowtime(req: JWTRequest, res: Response, nex
         const user = getAuthUser(req);
         const userId = user.id;
 
-        const showtimeRepo = dataSource.getRepository(ShowtimesEntity);
-        const sectionRepo = dataSource.getRepository(ShowtimeSectionsEntity);
+        // const showtimeRepo = dataSource.getRepository(ShowtimesEntity);
+        // const sectionRepo = dataSource.getRepository(ShowtimeSectionsEntity);
 
         // 檢查型別
         if (isNotValidInteger(activity_id)) {

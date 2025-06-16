@@ -1,4 +1,4 @@
-import e, { Response } from 'express';
+import { Response } from 'express';
 import { Logger } from 'pino';
 
 export enum RespStatusCode {
@@ -103,10 +103,10 @@ export interface ResponseData {
 }
 
 /** 初始回應資料 */
-export const initResponseData = (res: Response, code?: number, data?: object, message?: string): ResponseData => ({
+export const initResponseData = (res: Response, code?: number, data?: unknown, message?: string): ResponseData => ({
     res,
     code: code || 2000,
-    data,
+    data: typeof data === 'object' && data !== null ? data : undefined,
     message: message
 });
 
@@ -150,9 +150,9 @@ export class CustomError extends Error {
     httpStatus: number = 500;
     message: string;
     code: number = RespStatusCode.SERVER_ERROR;
-    data: any;
+    data: unknown;
 
-    constructor(statusCode?: number, serverMessage?: string, httpStatus?: number, data?: any) {
+    constructor(statusCode?: number, serverMessage?: string, httpStatus?: number, data?: unknown) {
         super();
         this.httpStatus = httpStatus || 500;
         this.code = statusCode || RespStatusCode.SERVER_ERROR;
