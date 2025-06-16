@@ -13,8 +13,8 @@ import {
     isNotValidUserName,
     isNotValidEmail,
     isNotValidPhoneNumber,
-    isNotValidBirthday,
-    isNotValidUrl
+    isNotValidBirthday
+    // isNotValidUrl
 } from '../utils/validation';
 import generateJWT from '../utils/generateJWT';
 import { getAuthUser } from '../middlewares/auth';

@@ -123,7 +123,7 @@ export const isValidDateFormat = (value: string, format: string): boolean => {
  * @param fields - 欲驗證的欄位名稱陣列(fields) => ['name', 'email', 'password']
  * @returns 若有欄位未填的話，回傳錯誤訊息陣列，否則回傳空陣列
  * */
-const requiredFields = (data: Record<string, any>, fields: string[]): string[] => {
+const requiredFields = (data: Record<string, unknown>, fields: string[]): string[] => {
     const errorsFields: string[] = [];
     fields.forEach(field => {
         const value = data[field];
