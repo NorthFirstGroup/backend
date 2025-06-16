@@ -18,6 +18,8 @@ import { DailySequenceEntity } from '../entities/DailySequence';
 
 import { seatInventoryService } from '../utils/seatInventory';
 import { createPaymentForm, verifyPayment } from '@/utils/ecPayAdapter';
+import { PaymentStatusMap, PaymentMethodLabelMap } from '@/enums/payment';
+import { OrderStatusMap } from '@/enums/order';
 
 const logger = getLogger('User');
 
@@ -34,15 +36,6 @@ interface OrderRequestBody {
     showtime_id: string; // 場次 ID (UUID)
     tickets: TicketInput[];
 }
-
-const paymentStatusMap: { [key in PaymentStatus]: string } = {
-    [PaymentStatus.PENDING]: '待付款',
-    [PaymentStatus.PAID]: '已付款',
-    [PaymentStatus.FAILED]: '支付失敗',
-    [PaymentStatus.REFUNDED]: '已退款',
-    [PaymentStatus.EXPIRED]: '支付超時',
-    [PaymentStatus.CANCELLED]: '支付取消'
-};
 
 function validateOrderNumber(orderNumber: string): boolean {
     // 1. Check total length and format
@@ -87,6 +80,29 @@ function validateOrderNumber(orderNumber: string): boolean {
 
     return true; // All checks passed
 }
+
+export const formatDateTime = (date: Date): string => {
+    // 檢查輸入是否為有效的 Date 物件
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      console.error("Invalid Date object provided to formatEventDateTime:", date);
+      return ''; // 或返回空字串，根據您的錯誤處理策略
+    }
+  
+    const formattedDate = date.toLocaleDateString('zh-TW', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  
+    const formattedTime = date.toLocaleTimeString('zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false // 確保使用 24 小時制
+    });
+  
+    return `${formattedDate} ${formattedTime}`;
+  };
+
 
 //建立訂單
 export async function postCreateOrder(req: JWTRequest, res: Response, next: NextFunction) {
@@ -508,7 +524,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
             })}`,
             location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
             organizer: order.showtime.activity.organizer.name,
-            status: paymentStatusMap[order.payment_status],
+            status: PaymentStatusMap[order.payment_status],
             ticketType: '電子票券', // As per OrderTicketEntity, ticket_type default is 1 (electronic ticket)
             ticketCount: order.total_count,
             totalPrice: parseFloat(order.total_price.toString()),
@@ -530,9 +546,11 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
     }
 }
 
+// 調整res結構
 interface OrderListItem {
     // orderId: number;
     orderNumber: string;
+    createdAt: string;
     eventName: string;
     eventDate: string;
     location: string;
@@ -542,6 +560,9 @@ interface OrderListItem {
     ticketCount: number;
     totalPrice: number;
     coverImage: string;
+    paymentMethod: string;
+    paymentStatus: string;
+    paymentDate: string;
     seats: {
         id: string;
         status: string;
@@ -611,23 +632,21 @@ export async function getUserOrders(req: JWTRequest, res: Response, next: NextFu
             return {
                 // orderId: order.id,
                 orderNumber: order.order_number,
+                createdAt: formatDateTime(order.created_at),
                 eventName: order.showtime.activity.name,
-                eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                })}`,
+                eventDate: formatDateTime(order.showtime.start_time),
                 location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
                 organizer: order.showtime.activity.organizer.name,
-                status: paymentStatusMap[order.payment_status],
+                status: OrderStatusMap[order.status],
                 ticketType: ticketType,
                 ticketCount: order.total_count,
                 totalPrice: parseFloat(order.total_price.toString()),
                 coverImage: order.showtime.activity.cover_image,
+                // add parameter: paymentMethod & paymentStatus
+                paymentMethod: PaymentMethodLabelMap[order.payment_method],
+                // order.payment_method === PaymentMethod.CREDIT_CARD ? '信用卡' : order.payment_method,
+                paymentStatus: PaymentStatusMap[order.payment_status],
+                paymentDate: formatDateTime(order.paid_at),
                 seats: seats
             };
         });
