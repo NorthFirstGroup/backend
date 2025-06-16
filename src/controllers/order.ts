@@ -752,12 +752,12 @@ export async function getTicketDetail(req: JWTRequest, res: Response, next: Next
 /** 綠界回呼 */
 export async function getECPayNotify(req: JWTRequest, res: Response, next: NextFunction) {
     try {
-        console.log('綠界回呼:', req.body);
+        // console.log('綠界回呼:', req.body);
         res.send('1|OK');
-        const result = verifyPayment(req.body);
-        if (!result) return;
 
-        // 設定為已付款
+        const result = verifyPayment(req.body);
+
+        // 設定為支付狀態
         const orderRepository = dataSource.getRepository(OrderEntity);
 
         const order = await orderRepository.findOne({
@@ -766,7 +766,7 @@ export async function getECPayNotify(req: JWTRequest, res: Response, next: NextF
 
         if (!order) return;
 
-        order.payment_status = PaymentStatus.PAID;
+        order.payment_status = (result) ? PaymentStatus.PAID : PaymentStatus.FAILED;
 
         await orderRepository.save(order);
     } catch (error) {

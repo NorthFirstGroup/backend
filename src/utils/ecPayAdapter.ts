@@ -2,7 +2,7 @@
 import dayjs from 'dayjs';
 import { randomUUID } from 'crypto';
 import { BasePaymentParams } from 'node-ecpay-aio/dist/types';
-import { Merchant, WebATMPayment, isValidReceivedCheckMacValue } from 'node-ecpay-aio';
+import { Merchant, CreditOneTimePayment, isValidReceivedCheckMacValue } from 'node-ecpay-aio';
 import ecpayConfig, { ECPayOperationMode, ClientDDNS } from '@/config/ecpay';
 
 export async function createPaymentForm(orderNumber: string, totalAmount: number, itemName?: string) {
@@ -32,7 +32,7 @@ export async function createPaymentForm(orderNumber: string, totalAmount: number
 
         const ecpay = new Merchant(ECPayOperationMode.Test, ecpayConfig);
         // 信用卡一次付款: CreditOneTimePayment,  ATM 一次付款: WebATMPayment
-        const payment = ecpay.createPayment(WebATMPayment , baseParams, {});
+        const payment = ecpay.createPayment(CreditOneTimePayment , baseParams, {});
         const htmlRedirectPostForm = await payment.checkout(/* 可選填發票 */);
 
         return htmlRedirectPostForm;
@@ -41,8 +41,9 @@ export async function createPaymentForm(orderNumber: string, totalAmount: number
     }
 }
 
-export function verifyPayment(data: { CheckMacValue: string }) {
+export function verifyPayment(data: { RtnCode: string, CheckMacValue: string }) {
     try {
+        if (data.RtnCode !== '1') return false;
         return isValidReceivedCheckMacValue(data, ecpayConfig.HashKey, ecpayConfig.HashIV);
     } catch (error) {
         console.log(error);
