@@ -382,6 +382,25 @@ export async function postUpload(req: JWTRequest, res: Response, next: NextFunct
 export async function applyAsOrganizer(req: JWTRequest, res: Response, next: NextFunction) {
     try {
         const { id } = getAuthUser(req);
+        const userRepository = dataSource.getRepository(dbEntityNameUser);
+        const user = await userRepository.findOne({
+            where: { id },
+            select: ['role']
+        });
+
+        if (!user) {
+            responseSend(initResponseData(res, 1008), logger);
+            return;
+        }
+
+        if (user.role === UserRole.ORGANIZER) {
+            responseSend(initResponseData(res, 1020), logger);
+            return;
+        }
+
+        // TODO: 目前預設直接將使用者角色設為 ORGANIZER，未來可能需要審核流程
+        await userRepository.update({ id }, { role: UserRole.ORGANIZER });
+
         const organizerRepository = dataSource.getRepository(DbEntity.Organizer);
         const existingOrganizer = await organizerRepository.findOne({ where: { user_id: id } });
         if (existingOrganizer) {
@@ -394,7 +413,7 @@ export async function applyAsOrganizer(req: JWTRequest, res: Response, next: Nex
             status: 1, // 目前預設直接審核通過
             ...req.body
         });
-        organizerRepository.save(newOrganizer);
+        await organizerRepository.save(newOrganizer);
 
         responseSend(initResponseData(res, 2000));
     } catch (error) {
