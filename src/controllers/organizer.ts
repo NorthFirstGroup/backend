@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { Request as JWTRequest } from 'express-jwt';
 import { dataSource } from '@db/data-source';
+import { DbEntity } from '@constants/dbEntity';
 import { getAuthUser } from '@middlewares/auth';
 import getLogger from '@utils/logger';
 import responseSend, { CustomError, initResponseData, RespStatusCode } from '@utils/serverResponse';
@@ -103,6 +104,68 @@ const siteValidator = async (reqBody: SiteRequestBody) => {
 
 export function formatToTaipeiDateTime(dateStr: string): string {
     return dayjs(dateStr).tz('Asia/Taipei').format('YYYY/M/D HH:mm');
+}
+
+export async function getProfile(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const organizerRepository = dataSource.getRepository(DbEntity.Organizer);
+        const organizer = await organizerRepository.findOne({
+            where: { user_id: userId, status: 1, is_deleted: false }
+        });
+        if (!organizer) {
+            responseSend(initResponseData(res, 1019), logger);
+            return;
+        }
+
+        const responseData = initResponseData(res, 2000);
+        responseData.data = organizer;
+        responseSend(responseData);
+    } catch (error) {
+        logger.error(`取得廠商個人資料錯誤：${error}`);
+        next(error);
+    }
+}
+
+export async function putProfile(req: JWTRequest, res: Response, next: NextFunction) {
+    try {
+        const { id: userId } = getAuthUser(req);
+        const { name, ubn, president, phone, address } = req.body as {
+            name: string;
+            ubn: string;
+            president: string;
+            phone: string;
+            address: string;
+        };
+
+        const organizerRepository = dataSource.getRepository(DbEntity.Organizer);
+        const organizer = await organizerRepository.findOne({
+            where: { user_id: userId, status: 1, is_deleted: false }
+        });
+
+        if (!organizer) {
+            responseSend(initResponseData(res, 1019), logger);
+            return;
+        }
+
+        const result = await organizerRepository.update(organizer.id, {
+            name: name,
+            ubn: ubn,
+            president: president,
+            phone: phone,
+            address: address
+        });
+
+        if (result.affected === 0) {
+            responseSend(initResponseData(res, 1002), logger);
+            return;
+        }
+
+        responseSend(initResponseData(res, 2000));
+    } catch (error) {
+        logger.error(`更新廠商個人資料錯誤：${error}`);
+        next(error);
+    }
 }
 
 /** 上傳圖片 */

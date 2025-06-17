@@ -20,6 +20,8 @@ const auth = createAuthMiddleware({
     logger
 });
 
+router.get('/profile', auth, isOrganizer, organizerController.getProfile);
+router.put('/profile', auth, isOrganizer, organizerController.putProfile);
 router.post('/upload/image', auth, isOrganizer, organizerController.postUploadImage);
 
 //  活動管理
