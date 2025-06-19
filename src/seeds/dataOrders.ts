@@ -41,7 +41,7 @@ export const orders = [
         id: orderIds[2],
         user_id: userIds[0],
         showtime_id: showtimeIds[2],
-        order_number: '2025061900001',
+        order_number: '2025061000001',
         total_count: 2,
         total_price: 3600,
         status: 'CANCELLED',
