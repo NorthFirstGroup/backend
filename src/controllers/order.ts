@@ -767,6 +767,8 @@ export async function getECPayNotify(req: JWTRequest, res: Response, next: NextF
         if (!order) return;
 
         order.payment_status = (result) ? PaymentStatus.PAID : PaymentStatus.FAILED;
+        order.status = (result) ? OrderStatus.COMPLETED : OrderStatus.CANCELLED;
+        order.paid_at = new Date();
 
         await orderRepository.save(order);
     } catch (error) {
