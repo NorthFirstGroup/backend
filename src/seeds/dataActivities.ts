@@ -550,7 +550,7 @@ export const activitySites = [
         activity_id: activityIds[0],
         area_id: 2,
         name: '台北小巨蛋',
-        address: '台北市松山區南京東路四段2號',
+        address: '105037台北市松山區南京東路四段2號',
         seating_map_url: '',
         seat_capacity: 10000,
         prices: [
@@ -564,7 +564,7 @@ export const activitySites = [
         activity_id: activityIds[0],
         area_id: 8,
         name: '台中巨蛋',
-        address: '台中市北區建國北路2號',
+        address: '台中市北屯區環中路一段與榮德路口西南側',
         seating_map_url: '',
         seat_capacity: 15000,
         prices: [
@@ -578,7 +578,7 @@ export const activitySites = [
         activity_id: activityIds[0],
         area_id: 15,
         name: '高雄巨蛋',
-        address: '高雄市前鎮區成功二路2號',
+        address: '813高雄市左營區博愛二路757號',
         seating_map_url: '',
         seat_capacity: 12000,
         prices: [
@@ -592,7 +592,7 @@ export const activitySites = [
         activity_id: activityIds[1],
         area_id: 2,
         name: '台北小巨蛋',
-        address: '台北市松山區南京東路四段2號',
+        address: '105037台北市松山區南京東路四段2號',
         seating_map_url: '',
         seat_capacity: 10000,
         prices: [
@@ -606,7 +606,7 @@ export const activitySites = [
         activity_id: activityIds[1],
         area_id: 8,
         name: '台中巨蛋',
-        address: '台中市北區建國北路2號',
+        address: '台中市北屯區環中路一段與榮德路口西南側',
         seating_map_url: '',
         seat_capacity: 15000,
         prices: [
@@ -620,7 +620,7 @@ export const activitySites = [
         activity_id: activityIds[2],
         area_id: 15,
         name: '高雄巨蛋',
-        address: '高雄市前鎮區成功二路2號',
+        address: '813高雄市左營區博愛二路757號',
         seating_map_url: '',
         seat_capacity: 12000,
         prices: [
@@ -634,7 +634,7 @@ export const activitySites = [
         activity_id: activityIds[3],
         area_id: 15,
         name: '高雄巨蛋',
-        address: '高雄市前鎮區成功二路2號',
+        address: '813高雄市左營區博愛二路757號',
         seating_map_url: '',
         seat_capacity: 12000,
         prices: [
