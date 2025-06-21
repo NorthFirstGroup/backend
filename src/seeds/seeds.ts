@@ -4,6 +4,7 @@ import { areas, categories } from './dataCommon';
 import { getSeedUsers, organizers } from './dataUsers';
 import { activities, activitySites, showtimes, showtimeSections } from './dataActivities';
 import { orders, orderTickets, tickets } from './dataOrders';
+import { activityTags } from './dataTags';
 
 async function reset() {
     await resetTable(DbEntity.Area);
@@ -17,6 +18,7 @@ async function reset() {
     await resetTable(DbEntity.Order);
     await resetTable(DbEntity.OrderTicket);
     await resetTable(DbEntity.Ticket);
+    await resetTable(DbEntity.Tag);
 }
 
 async function seed() {
@@ -32,6 +34,7 @@ async function seed() {
     await seedTable(DbEntity.Order, orders);
     await seedTable(DbEntity.OrderTicket, orderTickets);
     await seedTable(DbEntity.Ticket, tickets);
+    await seedTable(DbEntity.Tag, activityTags);
 
     runSeedRedisScript();
 }

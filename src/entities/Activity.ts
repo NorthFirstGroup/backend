@@ -17,6 +17,7 @@ import { OrganizerEntity } from './Organizer';
 import { ActivitySiteEntity } from './ActivitySite';
 import { ShowtimesEntity } from './Showtimes';
 import { ShowtimeSectionsEntity } from './ShowtimeSections';
+import { TagEntity } from './Tag';
 
 import { DbEntity } from '../constants/dbEntity';
 
@@ -61,9 +62,6 @@ export class ActivityEntity {
     @Column({ type: 'text', nullable: true })
     banner_image?: string;
 
-    @Column({ type: 'varchar', array: true, nullable: true })
-    tags?: string[];
-
     @CreateDateColumn({ type: 'timestamptz' })
     @Index()
     created_at!: Date;
@@ -94,4 +92,8 @@ export class ActivityEntity {
 
     @OneToMany(() => ShowtimeSectionsEntity, section => section.activity)
     showtimeSections!: ShowtimeSectionsEntity[];
+
+    // 🔁 多標籤活動關聯
+    @OneToMany(() => TagEntity, tag => tag.activity, { cascade: true })
+    tags!: TagEntity[];
 }

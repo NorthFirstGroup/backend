@@ -175,7 +175,7 @@ export async function getShowtime(req: JWTRequest, res: Response, next: NextFunc
         const result = {
             activity: {
                 id: showtime.activity.id,
-                name: showtime.activity.name,
+                name: showtime.activity.name
             },
             showtime: {
                 id: showtime.id,
@@ -204,6 +204,8 @@ export async function search(req: JWTRequest, res: Response, next: NextFunction)
     try {
         const keyword = req.query.keyword;
         const category = req.query.category as string;
+        const tag = req.query.tag as string;
+        const level = parseInt(req.query.level as string) || 0;
         const location = req.query.location as string;
         const date_start = req.query.date_start;
         const date_end = req.query.date_end;
@@ -215,6 +217,7 @@ export async function search(req: JWTRequest, res: Response, next: NextFunction)
             .createQueryBuilder('activity')
             .innerJoin('activity.organizer', 'organizer')
             .leftJoinAndSelect('activity.category', 'category')
+            .leftJoinAndSelect('activity.tags', 'tags')
             .leftJoinAndSelect('activity.sites', 'sites')
             .leftJoin('activity.showtimes', 'showtime')
             .where('activity.status = :status', { status })
@@ -231,14 +234,19 @@ export async function search(req: JWTRequest, res: Response, next: NextFunction)
             qb.andWhere('activity.category_id IN (:...categoryIds)', { categoryIds });
         }
 
+        // filter by tag: 'NewArrivals,LowStock,ComingSoon'
+        // tag level: user:0, system:9999
+        if (tag) {
+            const tags = tag.split(',').map(t => t.trim());
+            qb.andWhere('tags.name IN (:...tags) AND tags.level = :level', { tags, level });
+        }
+
         // filter by areaIds: '2,8,15'
         if (location) {
             const areaIds = location.split(',').map(id => parseInt(id.trim(), 10));
             qb.andWhere('showtime.site_id = sites.id');
             qb.andWhere('sites.area_id IN (:...areaIds)', { areaIds });
         }
-
-        // TODO: filter by tags
 
         // filter by date range
         if (date_start && date_end) {
