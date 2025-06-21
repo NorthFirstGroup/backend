@@ -124,11 +124,13 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
 
 export async function getComingSoon(req: JWTRequest, res: Response, next: NextFunction) {
     try {
+        const SalesInDays = parseInt(req.query.sales_in_days as string) | 3;
+
         // 取得清單資料
         const activityRepository = dataSource.getRepository(DbEntity.Activity);
 
         const now = new Date();
-        const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 三天後的日期
+        const threeDaysLater = new Date(Date.now() + SalesInDays * 24 * 60 * 60 * 1000); // 三天後的日期
 
         const comingSoons = await activityRepository
             .createQueryBuilder('activity')
