@@ -276,7 +276,8 @@ export async function getActivityById(req: JWTRequest, res: Response, next: Next
 
         const responseData = initResponseData(res, 2000);
         responseData.data = {
-            ...activity
+            ...activity,
+            banner_image: activity.banner_image || ''
         };
         responseSend(responseData);
     } catch (error) {
@@ -294,7 +295,6 @@ const createActivity = async (req: JWTRequest, res: Response, next: NextFunction
             'categoryId',
             'description',
             'coverImage',
-            'bannerImage',
             'information',
             'salesStartTime',
             'salesEndTime',
@@ -340,7 +340,7 @@ const createActivity = async (req: JWTRequest, res: Response, next: NextFunction
             sales_start_time: reqBody.salesStartTime,
             sales_end_time: reqBody.salesEndTime,
             cover_image: reqBody.coverImage,
-            banner_image: reqBody.bannerImage,
+            banner_image: reqBody.bannerImage || '',
             tags: reqBody.tags
         });
         const result = await activityRepo.save(newActivity);
@@ -372,7 +372,6 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
             'categoryId',
             'description',
             'coverImage',
-            'bannerImage',
             'information',
             'salesStartTime',
             'salesEndTime',
@@ -406,11 +405,13 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
         const activityRepo = dataSource.getRepository(ActivityEntity);
         // 取得organizer
         const organizer = await user.organizer;
+
+        console.log(' reqBody', reqBody);
         const result = await activityRepo.update(activityId, {
             organizer: organizer,
             name: reqBody.name,
             category: categoryQ,
-            status: ActivityStatus.Draft, // 預設為草稿狀態
+            status: reqBody.status,
             description: reqBody.description,
             information: reqBody.information,
             start_time: reqBody.startTime,
@@ -418,7 +419,7 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
             sales_start_time: reqBody.salesStartTime,
             sales_end_time: reqBody.salesEndTime,
             cover_image: reqBody.coverImage,
-            banner_image: reqBody.bannerImage,
+            banner_image: reqBody.bannerImage || '',
             tags: reqBody.tags
         });
         if (result.affected === 0) {
@@ -650,13 +651,22 @@ export async function getActivityShowtimes(req: JWTRequest, res: Response, next:
             .getMany();
 
         // 結構轉換
+
         const formattedData = showtimes.map(showtime => {
             return {
                 id: showtime.id,
-                start_time: dayjs(showtime.start_time).format('YYYY/MM/DD (dd) HH:mm'),
+                start_time: showtime.start_time,
+                site_id: showtime.site.id,
                 location: showtime.site.name,
                 address: showtime.site.address,
-                price: showtime.showtimeSections.map(section => section.price)
+                price: showtime.showtimeSections.map(section => section.price),
+                seats: showtime.showtimeSections.map((section: ShowtimeSectionsEntity) => ({
+                    id: section.id,
+                    section: section.section,
+                    price: section.price,
+                    capacity: section.capacity,
+                    vacancy: section.vacancy
+                }))
             };
         });
 
