@@ -1,6 +1,69 @@
 import { organizerIds } from './dataUsers';
 import { ActivityStatus } from '@enums/activity';
 
+const defaultDesc = `活動籌備中，敬請期待！`;
+const description = [
+    `
+在我們的日常語言中，「憂鬱」常被簡化為一種負面情緒，一種「藍色」的心情。然而，憂鬱不只是藍色。它可能是灰色的孤單、黑色的恐懼，也可能是紅色的憤怒與無力。這場活動結合了藝術展覽、音樂表演與心理講座，帶領觀眾深入探索憂鬱的多重面貌，從個人故事、創作者的觀點，到心理學的角度，重新認識這個情緒的多層意涵。
+
+透過真實分享與沉浸式體驗，我們希望打破對憂鬱的刻板印象，創造更多理解與支持的空間。讓我們一起看見——憂鬱，也可以是開啟對話的起點。`,
+    `搖滾靈魂再度點燃，伍佰 & China Blue 世界巡迴演唱會 強勢回歸！
+
+從〈浪人情歌〉到〈Last Dance〉，從地下樂團到華語搖滾傳奇，伍佰用音樂走過世代、跨越語言，用他的聲音寫下無數青春回憶。這一次，伍佰 & China Blue將攜手經典與創新，展開全新一輪世界巡演，帶著滿滿的搖滾能量與感動旋律，直擊每一位樂迷的靈魂！
+
+現場將重現多首經典金曲，搭配極致燈光音效與震撼視覺設計，讓你不只是聽演唱會，更是身歷其境，感受一場真正的搖滾盛典。
+
+如果你曾被伍佰的歌打動，這一次，別錯過現場與他一起唱出屬於你的搖滾回憶！`,
+    `🎶 老派精神，不敗風格！
+Old Style Party Night with TJO 隆重登場，一場獻給經典年代與復古靈魂的音樂派對，讓你穿越時空，感受最純粹的節奏律動！
+
+由知名 DJ TJO 主理，全場以 Old School Hip-Hop、Funk、Disco 與 90’s 經典為主軸，融合復古時尚與現代節奏，打造一晚最 Chill、最有態度的 「老派趴踢」。
+
+🎧 Dress Code：復古風、運動風、潮流復刻都歡迎，穿出你的 Old Style！
+💃🏻 活動特色：
+
+全場老派經典舞曲不間斷
+
+復古道具拍照區 & 特調酒品
+
+限定 TJO 現場 Set，回味無限
+
+不論你是資深樂迷還是復古新粉，這一夜，我們一起跳進記憶中的派對時光！`,
+    `🌿 二十年，一刻也不曾離開。
+從《小情歌》到《無與倫比的美麗》，從青春到成熟，蘇打綠陪伴著我們走過無數日夜。如今，歷經時光淬鍊，這個名字再次溫柔地唱進我們的心中。
+
+《二十年一刻》巡迴演唱會，是蘇打綠獻給樂迷最深情的回應。這不僅是一場音樂會，更是一場與青春、夢想與記憶的重逢。每一首歌，都是一個時代的印記；每一次演出，都是樂團與你我之間最真摯的連結。
+
+🎤 演出亮點：
+
+蘇打綠經典曲目全場回顧
+
+全新編曲重塑經典與創新交織
+
+專屬視覺與舞台設計，呈現蘇打綠音樂宇宙的深度與詩意
+
+讓我們在這一刻，再一次感受蘇打綠的音樂魔力——你還記得初次聽見他們的那一刻嗎？`
+];
+
+const information = `
+1. 請確認票種及場次資訊
+   訂購前請詳閱活動介紹與票種說明，確認場次時間、地點與座位區域，避免購錯無法退換。
+
+2. 一人一票，憑票入場
+   每張票券僅限一人使用，所有觀眾（含嬰幼兒）皆需購票入場，請勿重複使用票券。
+
+3. 票券不得轉售或兌換現金
+   為維護購票公平與消費者權益，票券一經購買，不得以高於原價轉售，亦不可兌換現金。
+
+4. 取消與退票政策
+   活動票券售出後恕不接受退換票，若遇天災或不可抗力因素導致活動取消，將依主辦單位公告辦理退票事宜。
+
+5. 入場須知與防疫措施
+   請配合現場人員指示入場，活動期間若有疫情防控規範，請務必配戴口罩並配合量測體溫。
+
+6. 主辦單位保有活動異動權利
+   主辦單位保留更改演出時間、地點、表演內容或取消活動之權利，如有異動將公告於官方平台。`;
+
 const activityNum = 29;
 export const activityIds = Array.from({ length: activityNum }, (_, i) => i + 1);
 
@@ -55,8 +118,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '這是一個測試活動',
-        information: '活動資訊',
+        description: description[0],
+        information: information,
         start_time: '2025-07-19 12:00+08',
         end_time: '2025-07-26 17:00+08',
         sales_start_time: '2025-05-20 12:00+08',
@@ -72,8 +135,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 9,
         status: ActivityStatus.Published,
-        description: '這是一個測試活動',
-        information: '活動資訊',
+        description: description[1],
+        information: information,
         start_time: '2025-07-01 12:00+08',
         end_time: '2025-07-19 17:00+08',
         sales_start_time: '2025-06-01 12:00+08',
@@ -89,8 +152,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 9,
         status: ActivityStatus.Published,
-        description: '這是一個測試活動',
-        information: '活動資訊',
+        description: description[2],
+        information: information,
         start_time: '2025-07-19 18:00+08',
         end_time: '2025-07-19 21:00+08',
         sales_start_time: '2025-05-01 12:00+08',
@@ -106,8 +169,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 9,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: description[3],
+        information: information,
         start_time: '2025-08-01 12:00+08',
         end_time: '2025-08-15 12:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -123,8 +186,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-04-26 14:00+08',
         end_time: '2025-04-26 16:00+08',
         sales_start_time: '2025-03-01 12:00+08',
@@ -140,8 +203,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 3,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-07-22 00:00+08',
         end_time: '2025-07-22 24:00+08',
         sales_start_time: '2025-06-01 12:00+08',
@@ -157,8 +220,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 4,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-08-09 14:00+08',
         end_time: '2025-08-09 16:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -174,8 +237,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-07-16 14:00+08',
         end_time: '2025-07-16 16:00+08',
         sales_start_time: '2025-06-01 12:00+08',
@@ -191,8 +254,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 8,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-08-13 14:00+08',
         end_time: '2025-08-13 16:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -208,8 +271,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-26 18:00+08',
         end_time: '2025-09-26 22:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -225,8 +288,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 7,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-04-26 14:00+08',
         end_time: '2025-04-26 16:00+08',
         sales_start_time: '2025-03-01 12:00+08',
@@ -242,8 +305,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-08-12 17:00+08',
         end_time: '2025-08-12 19:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -259,8 +322,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-12 09:00+08',
         end_time: '2025-09-12 12:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -276,8 +339,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 4,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-19 09:00+08',
         end_time: '2025-09-19 17:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -293,8 +356,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 7,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-22 09:00+08',
         end_time: '2025-09-22 17:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -310,8 +373,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 8,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-12 09:00+08',
         end_time: '2025-09-12 12:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -327,8 +390,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-11 09:00+08',
         end_time: '2025-09-11 12:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -344,8 +407,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-07-27 09:00+08',
         end_time: '2025-07-27 12:00+08',
         sales_start_time: '2025-06-25 12:00+08',
@@ -361,8 +424,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 4,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-18 16:00+08',
         end_time: '2025-09-18 22:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -378,8 +441,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-11 09:00+08',
         end_time: '2025-09-11 12:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -395,8 +458,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 10,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-10-09 09:00+08',
         end_time: '2025-10-10 12:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -412,8 +475,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-07-12 18:00+08',
         end_time: '2025-07-12 21:00+08',
         sales_start_time: '2025-06-01 12:00+08',
@@ -429,8 +492,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-08-03 12:00+08',
         end_time: '2025-08-03 15:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -446,8 +509,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-09-15 17:00+08',
         end_time: '2025-09-15 22:00+08',
         sales_start_time: '2025-07-01 12:00+08',
@@ -463,8 +526,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-10-21 13:00+08',
         end_time: '2025-10-21 17:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -480,8 +543,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-11-01 18:00+08',
         end_time: '2025-11-01 21:00+08',
         sales_start_time: '2025-08-01 12:00+08',
@@ -497,8 +560,8 @@ export const activities = [
         organizer_id: organizerIds[1],
         category_id: 7,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-12-05 09:00+08',
         end_time: '2025-12-05 17:00+08',
         sales_start_time: '2025-09-01 12:00+08',
@@ -514,8 +577,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 2,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2025-12-05 17:00+08',
         end_time: '2026-01-17 21:00+08',
         sales_start_time: '2025-10-01 12:00+08',
@@ -531,8 +594,8 @@ export const activities = [
         organizer_id: organizerIds[0],
         category_id: 1,
         status: ActivityStatus.Published,
-        description: '測試活動',
-        information: '活動資訊',
+        description: defaultDesc,
+        information: information,
         start_time: '2026-02-28 15:00+08',
         end_time: '2026-02-28 18:00+08',
         sales_start_time: '2025-12-01 12:00+08',
