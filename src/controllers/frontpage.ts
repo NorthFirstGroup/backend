@@ -14,7 +14,7 @@ export async function getTop(req: JWTRequest, res: Response, next: NextFunction)
         const activityRepository = dataSource.getRepository(DbEntity.Activity);
 
         const tops = await activityRepository.find({
-            where: { status: ActivityStatus.Published },
+            where: { status: ActivityStatus.Published, is_deleted: false },
             select: ['id', 'name', 'cover_image']
         });
 
@@ -38,6 +38,7 @@ export async function getHotTopics(req: JWTRequest, res: Response, next: NextFun
             .createQueryBuilder('activity')
             .leftJoin('activity.category', 'category')
             .where('activity.status = :status', { status: ActivityStatus.Published })
+            .andWhere('activity.is_deleted = false')
             .select([
                 'activity.id AS id',
                 'activity.name AS name',
@@ -69,6 +70,7 @@ export async function getNewArrivals(req: JWTRequest, res: Response, next: NextF
             .createQueryBuilder('activity')
             .leftJoin('activity.category', 'category')
             .where('activity.status = :status', { status: ActivityStatus.Published })
+            .andWhere('activity.is_deleted = false')
             .orderBy('activity.created_at', 'DESC') // 排序
             .take(10) // 限制筆數
             .select([
@@ -100,6 +102,7 @@ export async function getLowStock(req: JWTRequest, res: Response, next: NextFunc
             .leftJoin('activity.category', 'category')
             .leftJoin('activity.showtimeSections', 'showtimeSection')
             .where('activity.status = :status', { status: ActivityStatus.Published })
+            .andWhere('activity.is_deleted = false')
             .select([
                 'activity.id AS id',
                 'activity.name AS name',
@@ -140,6 +143,7 @@ export async function getComingSoon(req: JWTRequest, res: Response, next: NextFu
                 threeDaysLater
             })
             .andWhere('activity.status = :status', { status: ActivityStatus.Published })
+            .andWhere('activity.is_deleted = false')
             .orderBy('activity.sales_start_time', 'ASC')
             .select([
                 'activity.id AS id',
