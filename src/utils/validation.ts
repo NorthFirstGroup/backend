@@ -135,7 +135,13 @@ const requiredFields = (data: Record<string, unknown>, fields: string[]): string
     });
     return errorsFields;
 };
-const timeFormat = ['YYYY-MM-DDTHH:mm:ss.SSS[Z]', 'YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD HH:mm', 'YYYY-MM-DD'];
+const timeFormat = [
+    'YYYY-MM-DDTHH:mm:ss.SSS[Z]',
+    'YYYY-MM-DD HH:mm:ss',
+    'YYYY-MM-DD HH:mm Z',
+    'YYYY-MM-DD HH:mm',
+    'YYYY-MM-DD'
+];
 /** 檢查時間格式是否為有效的 YYYY-MM-DD HH:mm:ss 格式
  * @param value - 欲驗證的時間字串
  * @returns 若格式不符則拋出錯誤，否則回傳 dayjs 物件
