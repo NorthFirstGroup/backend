@@ -12,7 +12,7 @@ import { ShowtimeSectionsEntity } from '@entities/ShowtimeSections';
 import { ActivityEntity } from '@entities/Activity';
 import { ActivitySiteEntity } from '@entities/ActivitySite';
 import { OrganizerEntity } from '@entities/Organizer';
-import { isNotValidInteger, isNotValidUuid, isValidDateFormat, validator } from '@utils/validation';
+import { isNotValidInteger, isNotValidUuid, validator } from '@utils/validation';
 import { seatInventoryService } from '@utils/seatInventory';
 import { OrderEntity } from '@entities/Order';
 import { ActivityStatus } from '@enums/activity';
@@ -314,10 +314,10 @@ const createActivity = async (req: JWTRequest, res: Response, next: NextFunction
             throw new CustomError(RespStatusCode.FIELD_ERROR, '描述請限制在500字以內');
         }
 
-        validator.validTimeFormat(reqBody.salesStartTime, 'sales_start_time');
-        validator.validTimeFormat(reqBody.salesEndTime, 'sales_end_time');
-        validator.validTimeFormat(reqBody.startTime, 'start_time');
-        validator.validTimeFormat(reqBody.endTime, 'end_time');
+        // validator.validTimeFormat(reqBody.salesStartTime, 'sales_start_time');
+        // validator.validTimeFormat(reqBody.salesEndTime, 'sales_end_time');
+        // validator.validTimeFormat(reqBody.startTime, 'start_time');
+        // validator.validTimeFormat(reqBody.endTime, 'end_time');
 
         // 檢查活動分類是否存在
         const categoryRepo = dataSource.getRepository(ActivityTypeEntity);
@@ -391,10 +391,10 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
         if (reqBody.description.length > 500) {
             throw new CustomError(RespStatusCode.FIELD_ERROR, '欄位描述請限制在500字以內');
         }
-        validator.validTimeFormat(reqBody.salesStartTime, 'sales_start_time');
-        validator.validTimeFormat(reqBody.salesEndTime, 'sales_end_time');
-        validator.validTimeFormat(reqBody.startTime, 'start_time');
-        validator.validTimeFormat(reqBody.endTime, 'end_time');
+        // validator.validTimeFormat(reqBody.salesStartTime, 'sales_start_time');
+        // validator.validTimeFormat(reqBody.salesEndTime, 'sales_end_time');
+        // validator.validTimeFormat(reqBody.startTime, 'start_time');
+        // validator.validTimeFormat(reqBody.endTime, 'end_time');
 
         // 檢查活動分類是否存在
         const categoryRepo = dataSource.getRepository(ActivityTypeEntity);
@@ -692,15 +692,17 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
             return;
         }
         // 檢查日期格式
-        const format = 'YYYY-MM-DD HH:mm';
-        if (!isValidDateFormat(start_at, format)) {
-            logger.error('日期時間格式錯誤，請填寫正確的時間');
-            responseSend(initResponseData(res, 1010));
-            return;
-        }
+        // const format = 'YYYY-MM-DD HH:mm';
+        // if (!isValidDateFormat(start_at, format)) {
+        //     logger.error('日期時間格式錯誤，請填寫正確的時間');
+        //     responseSend(initResponseData(res, 1010));
+        //     return;
+        // }
 
-        const newStart = dayjs(start_at, format);
-        const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        // const newStart = dayjs(start_at, format);
+        // const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        const newStart = dayjs(start_at);
+        const newEnd = dayjs(newStart).add(3, 'hour'); // 假設每場 3 小時緩衝時間
         const formattedStartTime = newStart.toDate();
         await dataSource.transaction(async manager => {
             // 檢查廠商身分是否正確
@@ -838,14 +840,16 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
             return;
         }
         // 檢查日期格式
-        const format = 'YYYY-MM-DD HH:mm';
-        if (!isValidDateFormat(start_at, format)) {
-            responseSend(initResponseData(res, 1010));
-            return;
-        }
+        // const format = 'YYYY-MM-DD HH:mm';
+        // if (!isValidDateFormat(start_at, format)) {
+        //     responseSend(initResponseData(res, 1010));
+        //     return;
+        // }
 
-        const newStart = dayjs(start_at, format);
-        const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        // const newStart = dayjs(start_at, format);
+        // const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        const newStart = dayjs(start_at);
+        const newEnd = dayjs(newStart).add(3, 'hour'); // 假設每場 3 小時緩衝時間
         const formattedStartTime = newStart.toDate();
         await dataSource.transaction(async manager => {
             const organizer = await manager.findOne(OrganizerEntity, {

@@ -139,6 +139,8 @@ const timeFormat = [
     'YYYY-MM-DDTHH:mm:ss.SSS[Z]',
     'YYYY-MM-DD HH:mm:ss',
     'YYYY-MM-DD HH:mm Z',
+    'YYYY-MM-DD HH:mm ZZ',
+    'YYYY-MM-DD HH:mm ZZZ',
     'YYYY-MM-DD HH:mm',
     'YYYY-MM-DD'
 ];
@@ -146,6 +148,8 @@ const timeFormat = [
  * @param value - 欲驗證的時間字串
  * @returns 若格式不符則拋出錯誤，否則回傳 dayjs 物件
  */
+// TODO: EC2 docker environment
+//       check why value = "2025-08-01 13:00 +08:00" is not valid ?
 export const validTimeFormat = (value: string, fieldName?: string): dayjs.Dayjs => {
     if (!dayjs(value, timeFormat, true).isValid()) {
         throw new CustomError(
