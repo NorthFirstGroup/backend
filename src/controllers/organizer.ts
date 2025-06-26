@@ -33,6 +33,8 @@ dayjs.extend(timezone);
 dayjs.locale('zh-tw');
 const logger = getLogger('Organizer');
 
+const setTimeZone = 'Asia/Taipei';
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = {
     'image/jpeg': true,
@@ -314,6 +316,13 @@ const createActivity = async (req: JWTRequest, res: Response, next: NextFunction
             throw new CustomError(RespStatusCode.FIELD_ERROR, '描述請限制在500字以內');
         }
 
+        // 增加活動起訖時間檢查
+        if (dayjs(reqBody.endTime) < dayjs(reqBody.startTime)) {
+            logger.error('活動起訖日期設定異常');
+            responseSend(initResponseData(res, 3013));
+            return;
+        }
+
         // validator.validTimeFormat(reqBody.salesStartTime, 'sales_start_time');
         // validator.validTimeFormat(reqBody.salesEndTime, 'sales_end_time');
         // validator.validTimeFormat(reqBody.startTime, 'start_time');
@@ -335,10 +344,10 @@ const createActivity = async (req: JWTRequest, res: Response, next: NextFunction
             status: ActivityStatus.Draft, // 預設為草稿狀態
             description: reqBody.description,
             information: reqBody.information,
-            start_time: reqBody.startTime,
-            end_time: reqBody.endTime,
-            sales_start_time: reqBody.salesStartTime,
-            sales_end_time: reqBody.salesEndTime,
+            start_time: dayjs(reqBody.startTime),
+            end_time: dayjs(reqBody.endTime),
+            sales_start_time: dayjs(reqBody.salesStartTime),
+            sales_end_time: dayjs(reqBody.salesEndTime),
             cover_image: reqBody.coverImage,
             banner_image: reqBody.bannerImage || '',
             tags: reqBody.tags
@@ -390,6 +399,13 @@ const updateActivity = async (req: AuthRequest, res: Response, next: NextFunctio
         }
         if (reqBody.description.length > 500) {
             throw new CustomError(RespStatusCode.FIELD_ERROR, '欄位描述請限制在500字以內');
+        }
+
+        // 增加活動起訖時間檢查
+        if (dayjs(reqBody.endTime) < dayjs(reqBody.startTime)) {
+            logger.error('活動起訖日期設定異常');
+            responseSend(initResponseData(res, 3013));
+            return;
         }
         // validator.validTimeFormat(reqBody.salesStartTime, 'sales_start_time');
         // validator.validTimeFormat(reqBody.salesEndTime, 'sales_end_time');
@@ -701,8 +717,8 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
 
         // const newStart = dayjs(start_at, format);
         // const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
-        const newStart = dayjs(start_at);
-        const newEnd = dayjs(newStart).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        const newStart = dayjs(start_at).tz(setTimeZone);
+        const newEnd = dayjs(newStart).tz(setTimeZone).add(3, 'hour'); // 假設每場 3 小時緩衝時間
         const formattedStartTime = newStart.toDate();
         await dataSource.transaction(async manager => {
             // 檢查廠商身分是否正確
@@ -754,13 +770,16 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
                 return;
             }
 
+            const sessionStartDay = dayjs(formattedStartTime).tz(setTimeZone).startOf('day').toDate()
+            const activityStartDay = dayjs(activity.start_time).tz(setTimeZone).startOf('day').toDate();
+            const activityEndDay = dayjs(activity.end_time).tz(setTimeZone).startOf('day').toDate();
             // 檢查場次時間是否有衝突, 場次的start_at 應介於 avtivity.start_time ~  avtivity.end_time
-            if (formattedStartTime < activity.start_time || formattedStartTime > activity.sales_end_time) {
-                logger.error('場次開始時間異常');
+            if (sessionStartDay < activityStartDay || sessionStartDay > activityEndDay) {
+                logger.error('場次開始時間異常，超出整體活動時間範圍');
                 responseSend(initResponseData(res, 3006), logger);
                 return;
             }
-
+            
             // 檢查場次的時間地點是否重複
             const showtimeExist = await manager
                 .createQueryBuilder(ShowtimesEntity, 'showtime')
@@ -848,8 +867,8 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
 
         // const newStart = dayjs(start_at, format);
         // const newEnd = dayjs(newStart, format).add(3, 'hour'); // 假設每場 3 小時緩衝時間
-        const newStart = dayjs(start_at);
-        const newEnd = dayjs(newStart).add(3, 'hour'); // 假設每場 3 小時緩衝時間
+        const newStart = dayjs(start_at).tz(setTimeZone);
+        const newEnd = dayjs(newStart).tz(setTimeZone).add(3, 'hour'); // 假設每場 3 小時緩衝時間
         const formattedStartTime = newStart.toDate();
         await dataSource.transaction(async manager => {
             const organizer = await manager.findOne(OrganizerEntity, {
@@ -936,8 +955,11 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
                 responseSend(initResponseData(res, 3009)); // 已有訂單，禁止更動
             }
 
+            const sessionStartDay = dayjs(formattedStartTime).tz(setTimeZone).startOf('day').toDate()
+            const activityStartDay = dayjs(activity.start_time).tz(setTimeZone).startOf('day').toDate();
+            const activityEndDay = dayjs(activity.end_time).tz(setTimeZone).startOf('day').toDate();
             // 檢查場次時間是否有衝突, 場次的start_at 應介於 avtivity.start_time ~  avtivity.end_time
-            if (formattedStartTime < activity.start_time || formattedStartTime > activity.sales_end_time) {
+            if (sessionStartDay < activityStartDay || sessionStartDay > activityEndDay) {
                 logger.error('場次開始時間異常');
                 responseSend(initResponseData(res, 3006), logger);
                 return;
