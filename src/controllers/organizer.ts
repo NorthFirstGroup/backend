@@ -479,6 +479,109 @@ const deleteActivity = async (req: AuthRequest, res: Response, next: NextFunctio
     }
 };
 
+const copyActivityById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const siteMap = new Map(); // old site id to new site
+    try {
+        const { id: userId } = getAuthUser(req);
+        const activityId = parseInt(req.params.activity_id as string) || null;
+        if (!activityId) {
+            responseSend(initResponseData(res, 1011), logger);
+            return;
+        }
+
+        await dataSource.transaction(async manager => {
+            const activityRepo = manager.getRepository(ActivityEntity);
+            const activity = await activityRepo
+                .createQueryBuilder('activity')
+                .innerJoin('activity.organizer', 'organizer')
+                .leftJoinAndSelect('activity.sites', 'sites')
+                .leftJoinAndSelect('activity.showtimes', 'showtime')
+                .where('activity.id = :activityId', { activityId })
+                .andWhere('organizer.user_id = :userId', { userId })
+                .getOne();
+
+            if (!activity) {
+                responseSend(initResponseData(res, 3014), logger);
+                return;
+            }
+
+            const activityData = await activityRepo.create({
+                name: activity.name + ' (Copy)',
+                organizer_id: activity.organizer_id,
+                category_id: activity.category_id,
+                status: ActivityStatus.Draft,
+                description: activity.description,
+                information: activity.information,
+                start_time: activity.start_time,
+                end_time: activity.end_time,
+                sales_start_time: activity.sales_start_time,
+                sales_end_time: activity.sales_end_time,
+                cover_image: activity.cover_image,
+                banner_image: activity.banner_image
+            });
+            const newActivity = await activityRepo.save(activityData);
+            if (!newActivity) {
+                responseSend(initResponseData(res, 3015), logger);
+                return;
+            }
+
+            const siteRepo = manager.getRepository(ActivitySiteEntity);
+            for (const site of activity.sites) {
+                const newSite = await siteRepo.save({
+                    activity_id: newActivity.id,
+                    area_id: site.area_id,
+                    name: site.name,
+                    address: site.address,
+                    seating_map_url: site.seating_map_url,
+                    seat_capacity: site.seat_capacity,
+                    prices: site.prices
+                });
+                if (!newSite) {
+                    responseSend(initResponseData(res, 3016), logger);
+                    return;
+                }
+                siteMap.set(site.id, newSite);
+            }
+
+            const showtimeRepo = manager.getRepository(ShowtimesEntity);
+            const sectionRepo = manager.getRepository(ShowtimeSectionsEntity);
+            for (const showtime of activity.showtimes) {
+                const newSite: ActivitySiteEntity = siteMap.get(showtime.site_id);
+                const newShowTime = await showtimeRepo.save({
+                    site_id: newSite.id,
+                    activity_id: newActivity.id,
+                    start_time: showtime.start_time,
+                    seat_image: showtime.seat_image
+                });
+                if (!newShowTime) {
+                    responseSend(initResponseData(res, 3017), logger);
+                    return;
+                }
+
+                const sections: ShowtimeSectionsEntity[] = newSite.prices.map(price =>
+                    sectionRepo.create({
+                        showtime_id: newShowTime.id,
+                        site_id: newSite.id,
+                        activity_id: newActivity.id,
+                        section: price.section,
+                        price: price.price,
+                        capacity: price.capacity,
+                        vacancy: price.capacity
+                    })
+                );
+                await sectionRepo.save(sections);
+            }
+        });
+
+        responseSend(initResponseData(res, 2000));
+    } catch (error) {
+        logger.error(`複製廠商單一活動錯誤：${error}`);
+        next(error);
+    } finally {
+        siteMap.clear();
+    }
+};
+
 // organizer Site CRUD operations
 // 56. 取得活動場地列表
 const getSiteByActivityId = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -601,6 +704,7 @@ const deleteSite = async (req: AuthRequest, res: Response, next: NextFunction) =
 export const organizerActivityCtrl = {
     get: getActivity,
     getById: getActivityById,
+    copyById: copyActivityById,
     create: createActivity,
     update: updateActivity,
     delete: deleteActivity
@@ -770,7 +874,7 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
                 return;
             }
 
-            const sessionStartDay = dayjs(formattedStartTime).tz(setTimeZone).startOf('day').toDate()
+            const sessionStartDay = dayjs(formattedStartTime).tz(setTimeZone).startOf('day').toDate();
             const activityStartDay = dayjs(activity.start_time).tz(setTimeZone).startOf('day').toDate();
             const activityEndDay = dayjs(activity.end_time).tz(setTimeZone).startOf('day').toDate();
             // 檢查場次時間是否有衝突, 場次的start_at 應介於 avtivity.start_time ~  avtivity.end_time
@@ -779,7 +883,7 @@ export async function postActivityShowtime(req: JWTRequest, res: Response, next:
                 responseSend(initResponseData(res, 3006), logger);
                 return;
             }
-            
+
             // 檢查場次的時間地點是否重複
             const showtimeExist = await manager
                 .createQueryBuilder(ShowtimesEntity, 'showtime')
@@ -955,7 +1059,7 @@ export async function putActivityShowtime(req: JWTRequest, res: Response, next: 
                 responseSend(initResponseData(res, 3009)); // 已有訂單，禁止更動
             }
 
-            const sessionStartDay = dayjs(formattedStartTime).tz(setTimeZone).startOf('day').toDate()
+            const sessionStartDay = dayjs(formattedStartTime).tz(setTimeZone).startOf('day').toDate();
             const activityStartDay = dayjs(activity.start_time).tz(setTimeZone).startOf('day').toDate();
             const activityEndDay = dayjs(activity.end_time).tz(setTimeZone).startOf('day').toDate();
             // 檢查場次時間是否有衝突, 場次的start_at 應介於 avtivity.start_time ~  avtivity.end_time
