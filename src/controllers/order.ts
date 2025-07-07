@@ -84,25 +84,11 @@ function validateOrderNumber(orderNumber: string): boolean {
 export const formatDateTime = (date: Date): string => {
     // 檢查輸入是否為有效的 Date 物件
     if (!(date instanceof Date) || isNaN(date.getTime())) {
-      console.error("Invalid Date object provided to formatEventDateTime:", date);
-      return ''; // 或返回空字串，根據您的錯誤處理策略
+        console.error('Invalid Date object provided to formatEventDateTime:', date);
+        return ''; // 或返回空字串，根據您的錯誤處理策略
     }
-  
-    const formattedDate = date.toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  
-    const formattedTime = date.toLocaleTimeString('zh-TW', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false // 確保使用 24 小時制
-    });
-  
-    return `${formattedDate} ${formattedTime}`;
-  };
-
+    return date.toISOString();
+};
 
 //建立訂單
 export async function postCreateOrder(req: JWTRequest, res: Response, next: NextFunction) {
@@ -513,15 +499,7 @@ export async function getOrderDetail(req: JWTRequest, res: Response, next: NextF
             // orderId: order_id,
             orderNumber: order.order_number,
             eventName: order.showtime.activity.name,
-            eventDate: `${order.showtime.start_time.toLocaleDateString('zh-TW', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            })} ${order.showtime.start_time.toLocaleTimeString('zh-TW', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            })}`,
+            eventDate: formatDateTime(order.showtime.start_time),
             location: `${order.showtime.site.name} / ${order.showtime.site.address}`,
             organizer: order.showtime.activity.organizer.name,
             status: PaymentStatusMap[order.payment_status],
@@ -722,16 +700,7 @@ export async function getTicketDetail(req: JWTRequest, res: Response, next: Next
         const formattedTicketDetail = {
             ticket_code: ticket.ticket_code,
             eventName: ticket.order.showtime.activity.name,
-            eventDate: new Date(ticket.order.showtime.start_time)
-                .toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false // 24小時制
-                })
-                .replace(/\//g, '/'), // 格式化為 "YYYY/MM/DD HH:MM"
+            eventDate: formatDateTime(ticket.order.showtime.start_time),
             location: `${ticket.order.showtime.site.name} / ${ticket.order.showtime.site.address}`,
             organizer: ticket.order.showtime.activity.organizer.name,
             status: ticketStatus,
@@ -766,8 +735,8 @@ export async function getECPayNotify(req: JWTRequest, res: Response, next: NextF
 
         if (!order) return;
 
-        order.payment_status = (result) ? PaymentStatus.PAID : PaymentStatus.FAILED;
-        order.status = (result) ? OrderStatus.COMPLETED : OrderStatus.CANCELLED;
+        order.payment_status = result ? PaymentStatus.PAID : PaymentStatus.FAILED;
+        order.status = result ? OrderStatus.COMPLETED : OrderStatus.CANCELLED;
         order.paid_at = new Date();
 
         await orderRepository.save(order);
