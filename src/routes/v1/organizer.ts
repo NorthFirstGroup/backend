@@ -38,6 +38,7 @@ router
     .put(auth, isActivityOwner, organizerActivityCtrl.update)
     .delete(auth, isActivityOwner, organizerActivityCtrl.delete);
 router.post('/activity/:activity_id/copy', auth, isOrganizer, organizerActivityCtrl.copyById);
+router.post('/activity/genDescription', auth, isOrganizer, organizerActivityCtrl.genDescription);
 
 // 場地管理
 //56. GET - /api/v1/organizer/activity/:activityId/site

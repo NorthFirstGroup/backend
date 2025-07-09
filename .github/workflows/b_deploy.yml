@@ -66,6 +66,8 @@ jobs:
             ECPAY_MERCHANTID=${{ secrets.ECPAY_MERCHANTID }}
             ECPAY_HASHKEEY=${{ secrets.ECPAY_HASHKEEY }}
             ECPAY_HASHIV=${{ secrets.ECPAY_HASHIV }}
+
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY}}
             EOF
 
       - name: SSH into EC2 and build + restart Docker  # 執行 npm build 和重啟 Docker 容器

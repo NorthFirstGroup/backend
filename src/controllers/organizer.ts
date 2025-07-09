@@ -7,6 +7,7 @@ import getLogger from '@utils/logger';
 import responseSend, { CustomError, initResponseData, RespStatusCode } from '@utils/serverResponse';
 import formidable from 'formidable';
 import { uploadPublicImage } from '@utils/uploadFile';
+import { generateContent } from '@/utils/gemini';
 import { ShowtimesEntity } from '@entities/Showtimes';
 import { ShowtimeSectionsEntity } from '@entities/ShowtimeSections';
 import { ActivityEntity } from '@entities/Activity';
@@ -582,6 +583,18 @@ const copyActivityById = async (req: AuthRequest, res: Response, next: NextFunct
     }
 };
 
+const genActivityDescription = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const name = req.body.name;
+        const prompt = `請幫我針對活動名稱為「${name}」，撰寫一段活動文案約 300 字。請使用中文撰寫，並且讓文案具有吸引力和感染力。`;
+        const description = await generateContent(prompt);
+        responseSend(initResponseData(res, 2000, { description }));
+    } catch (error) {
+        logger.error(`產生活動描述錯誤：${error}`);
+        next(error);
+    }
+};
+
 // organizer Site CRUD operations
 // 56. 取得活動場地列表
 const getSiteByActivityId = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -707,7 +720,8 @@ export const organizerActivityCtrl = {
     copyById: copyActivityById,
     create: createActivity,
     update: updateActivity,
-    delete: deleteActivity
+    delete: deleteActivity,
+    genDescription: genActivityDescription
 };
 export const organizerSiteCtrl = {
     getByActivityId: getSiteByActivityId,
